@@ -50,7 +50,7 @@
         .school-header-banner { 
     background: linear-gradient(135deg, #1b5e20 0%, #388e3c 100%); 
     color: var(--gold); 
-    padding: 20px 20px; /* 50px වෙනුවට 20px ලෙස වෙනස් කර ඇත */
+    padding: 20px 20px; 
     text-align: center; 
     border-radius: 25px; 
     margin-bottom: 35px; 
@@ -112,18 +112,13 @@
         #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.8); display: none; justify-content: center; align-items: center; z-index: 10000; font-weight: bold; color: var(--primary); }
 
         @media print {
-    /* A4 Landscape සැකසුම සහ මායිම් (Margins) අවම කිරීම */
     @page { 
         size: A4 landscape; 
-        margin: 10mm 5mm 10mm 5mm; /* ඉහළ, දකුණ, පහළ, වම */
+        margin: 10mm 5mm 10mm 5mm; 
     }
-
-    /* අනවශ්‍ය කොටස් සැඟවීම */
     .sidebar, .no-print, .school-header-banner, button, .footer-credit { 
         display: none !important; 
     }
-
-    /* ප්‍රධාන අන්තර්ගතය සම්පූර්ණ පළලට ගැනීම */
     .main-content { 
         margin-left: 0 !important; 
         padding: 0 !important; 
@@ -136,7 +131,6 @@
         padding: 0 !important; 
     }
 
-    /* ඉහළ ශීර්ෂයේ ඉඩ අඩු කිරීම (Header reduction) */
     .report-school-name { 
         display: block !important; 
         margin-bottom: 5px !important; 
@@ -144,7 +138,7 @@
     }
 
     .report-school-name h1 { 
-        font-size: 20px !important; /* අකුරු කුඩා කිරීම */
+        font-size: 20px !important; 
         margin: 0 !important; 
         padding: 0 !important;
     }
@@ -159,19 +153,17 @@
         margin-bottom: 10px !important;
     }
 
-    /* වගුවේ දත්ත සඳහා වැඩි ඉඩක් ලබා දීම */
     table, .q-table { 
         width: 100% !important; 
         border-collapse: collapse !important;
-        font-size: 10pt !important; /* කියවීමට පහසු කුඩා අකුරු */
+        font-size: 10pt !important; 
     }
 
     th, td { 
-        padding: 4px 2px !important; /* කොටු තුළ ඉඩ (Padding) අවම කිරීම */
-        border: 1px solid #333 !important; /* මුද්‍රණයේදී පැහැදිලිව පෙනෙන මායිම් */
+        padding: 4px 2px !important; 
+        border: 1px solid #333 !important; 
     }
 
-    /* වගුවේ පේළි පිටු අතර කැඩී නොයෑමට */
     tr { 
         page-break-inside: avoid; 
     }
@@ -267,6 +259,10 @@
                 <div class="field"><label>සිට</label><input type="date" id="repFrom"></div>
                 <div class="field"><label>දක්වා</label><input type="date" id="repTo"></div>
                 <div class="field" id="filter-box" style="display:none;"><label>ගිණුම් කේතය</label><select id="repFilter"></select></div>
+		<div class="field" id="bank-bal-box" style="display:none;">
+    		<label>බැංකු ප්‍රකාශයේ ශේෂය</label>
+    		<input type="number" id="bankStmtInput" placeholder="0.00" oninput="generateReport()">
+		</div>
                 <button class="btn" style="align-self: flex-end; background: var(--primary); color: var(--gold);" onclick="generateReport()">වාර්තාව සකසන්න</button>
                 <button class="btn" style="align-self: flex-end; background: var(--secondary); color: white;" onclick="window.print()">Print Report</button>
             </div>
@@ -397,7 +393,7 @@
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzgMEK0OU2pbv84jerjbHuz80aN5pZ5V89FU7uJ8eGoOnQotXo8gvG89qdHLKVjvLrVhQ/exec";
 
     const S_CODES = ["S1","S2","S3","S4","S5","S6","S7","S8","S9","S10"];
-    const EX_CODES = ["REx1","REx2","REx3","REx4","REx5","REx6","REx7","REx8","CEx1","CEx2","CEx3","CEx4","CEx5","CEx6"];
+    const EX_CODES = ["REx1","REx2","REx3","REx4","REx5","REx6","REx7","CEx1","CEx2","CEx3","CEx4","CEx5","CEx6"];
     const CODE_INFO = {
         "S1":"ඒකාබද්ධ අරමුදල් සහ පළාත් සභා අරමුදල්", "S2":"සහයෝගිතා ගිවිසුම් යටතේ ක්‍රියාත්මක වන වැඩසටහන් හා ව්‍යාපෘති සඳහා ලැබෙන අරමුදල්", "S3":"රජයේ ආධාර", "S4":"පාසල් පාදක ඉගෙනුම් ප්‍රවර්ධන ප්‍රදානයන්, ගුණාත්මක යෙදවුම් හා උසස් මට්ටමේ ඉගෙනුම් ක්‍රියාවලි සඳහා ලැබෙන අරමුදල්", "S5":"රජය විසින් අනුමත හා ලියාපදිංචි රාජ්‍ය නොවන සංවිධාන වලින් ලැබෙන ආධාර", "S6":"පාසලේ දියුණුව වෙනුවෙන් ස්ව කැමැත්තෙන් දායකත්වය ලබා දෙන ඕනෑම පාර්ශවයක පරිත්‍යාග", "S7":"පාසලට අයත් වත්කම් වලින් උපයා ගන්නා ආදායම්", "S8":"පාසල් සංවර්ධන සමිති සාමාජික මුදල්", "S9":"පාසලේ ඉගෙනුම් ඉගැන්වීම් ක්‍රියාවලියට අදාළ අත්‍යවශ්‍ය ක්‍රියාකාරකම් සඳහා ලැබීම්", "S10":"පාසල් සංවර්ධන සමිතිය මඟින් තීරණය කරනු ලබන පාසලේ අත්‍යවශ්‍ය වියදම් පියවා ගැනීම සඳහා වන අරමුදල්",
         "REx1":"විෂය මාලා ක්‍රියාත්මක කිරීමට අදාළ පුනරාවර්තන වියදම්", "REx2":"උපදේශන, උසස් අධ්‍යාපන හා විෂය සමගාමී ක්‍රියාකාරකම්", "REx3":"අධ්‍යාපන පරිපාලන හා උපයෝගිතා සේවා හා සුභසාධන කටයුතු", "REx4":"කාර්ය මණ්ඩල පාරිශ්‍රමික", "REx5":"ප්‍රාග්ධන භාණ්ඩ හා උපකරණ නඩත්තු/අලුත්වැඩියා", "REx6":"පාසලේ ගොඩනැගිලි සුළු නඩත්තු/අලුත්වැඩියා", "REx7":"පවිත්‍රතා හා පිරිසිදු කිරීම්", 
@@ -465,7 +461,6 @@
     async function init() {
     if (initialized) return;
 
-    // මුලින්ම පවතින දත්ත පෙන්වන්න (වේගවත් ආරම්භයක් සඳහා)
     populateOptions();
 
     refreshDashboard();
@@ -473,7 +468,7 @@
     updateProjectSelects();
     renderProjectList();
 
-    // ඉන්පසු පසුබිමෙන් අලුත් දත්ත Fetch කරන්න
+  
     fetchRemoteData().then(() => {
         refreshDashboard();
         renderProjectList();
@@ -516,7 +511,6 @@
         document.getElementById('codes-ex').innerHTML = EX_CODES.map(c => `<div class="code-tag"><span class="code-num" style="background:var(--danger); color:white;">${c}</span>${CODE_INFO[c]}</div>`).join('');
     }
 
-    // දත්ත ගබඩා කළ පසු පද්ධතිය ස්වයංක්‍රීයව අලුත් කිරීමට සකසා ඇත
     async function saveData(type) {
     const prefix = type === 'IN' ? 'in' : 'ex';
     const idField = document.getElementById('edit-id-' + prefix);
@@ -540,17 +534,14 @@
     
     if(!data.date || data.amt <= 0) return alert("කරුණාකර දිනය සහ මුදල ඇතුළත් කරන්න.");
 
-    // 1. Local Database එකට වහාම දත්ත එකතු කර Dashboard එක Update කිරීම (ප්‍රමාදයකින් තොරව)
     let localDB = JSON.parse(localStorage.getItem('sch_db') || '[]');
     localDB.push(data);
     localStorage.setItem('sch_db', JSON.stringify(localDB));
     
-    // වෙබ් පිටුවේ පෙනුම වහාම අලුත් කිරීම
     refreshDashboard();
     loadRecentTable();
     resetForms();
 
-    // 2. පසුබිමෙන් (Background) Google Sheet එකට දත්ත යැවීම
     try {
         fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify(data) });
         console.log("දත්ත පසුබිමෙන් සුරැකිණි.");
@@ -603,6 +594,8 @@
         currentReport = type;
         showSec('report');
         document.getElementById('filter-box').style.display = (type === 'IN' || type === 'EX') ? 'block' : 'none';
+	// බැංකු ශේෂය ඇතුළත් කරන කොටුව පාලනය කිරීම
+	document.getElementById('bank-bal-box').style.display = (type === 'BANK') ? 'block' : 'none';
         if(type === 'IN' || type === 'EX') {
             const list = type === 'IN' ? S_CODES : EX_CODES;
             document.getElementById('repFilter').innerHTML = '<option value="ALL">සියලුම කේතයන්</option>' + list.map(c => `<option value="${c}">${c} - ${CODE_INFO[c]}</option>`).join('');
@@ -622,7 +615,7 @@
     let bal = db.filter(r => r.isOp).reduce((a,c) => a+c.amt, 0);
     if(from) { db.filter(r => !r.isOp && r.date < from).forEach(r => bal += (r.type==='IN'?r.amt:-r.amt)); }
     
-    // වගුවේ හිස (Header) - චෙක්පත් අංකය සඳහා අලුත් තීරුවක් (Column) එක් කිරීම
+
     html = `<table><thead><tr>
                 <th>දිනය</th>
                 <th>විස්තරය</th>
@@ -631,47 +624,81 @@
                 <th>ලැබීම් (+)</th>
                 <th>ගෙවීම් (-)</th>
                 <th>ශේෂය</th>
-            </tr></thead><tbody><tr style="background:#f0f0f0; font-weight:bold;"><td colspan="6" style="text-align:right">ආරම්භක ශේෂය:</td><td style="text-align:right">${bal.toLocaleString()}</td></tr>`;
+            </tr></thead><tbody><tr style="background:#f0f0f0; font-weight:bold;"><td colspan="6" style="text-align:right">ආරම්භක ශේෂය:</td><td style="text-align:right">${bal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
     
     db.filter(r => !r.isOp && (!from || r.date >= from) && (!to || r.date <= to)).sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(r => {
         bal += (r.type === 'IN' ? r.amt : -r.amt);
         
-        // දත්ත පේළියට r.ref (චෙක්පත් අංකය) සහ r.vouch (වවුචර් අංකය) වෙන වෙනම එක් කිරීම
         html += `<tr>
-                    <td>${r.date}</td>
+                    <td>${r.date.split('T')[0]}</td>
                     <td>${r.desc}</td>
                     <td>${r.ref || '-'}</td>
                     <td>${r.vouch || (r.type === 'IN' ? r.ref : '-')}</td>
-                    <td style="text-align:right">${r.type==='IN'?r.amt.toLocaleString():'-'}</td>
-                    <td style="text-align:right">${r.type==='EX'?r.amt.toLocaleString():'-'}</td>
-                    <td style="text-align:right; font-weight:bold">${bal.toLocaleString()}</td>
+                    <td style="text-align:right">${(r.type==='IN' && r.amt !== 0) ? r.amt.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td>
+		    <td style="text-align:right">${(r.type==='EX' && r.amt !== 0) ? r.amt.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td>
+		    <td style="text-align:right; font-weight:bold">${bal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
                 </tr>`;
     });
     html += '</tbody></table>';
+} else if(currentReport === 'BANK') {
+    document.getElementById('report-header-title').innerText = "බැංකු සැසඳුම් වාර්තාව";
+    let bankStmtBal = parseFloat(document.getElementById('bankStmtInput').value || 0);
+    let filteredDb = db.filter(r => (!from || r.date >= from) && (!to || r.date <= to));
 
-        } else if(currentReport === 'BANK') {
-    document.getElementById('report-header-title').innerText = "බැංකු සැසඳුම් වාර්තාව සහ චෙක්පත් තත්ත්වය";
-    let bankStmtBal = parseFloat(prompt("බැංකු ප්‍රකාශයේ ශේෂය (Bank Statement Balance) ඇතුළත් කරන්න:", "0.00")) || 0;
+  
+    let unpresentedList = filteredDb.filter(r => r.type === 'EX' && (clearedStatus[r.id] || 'Pending') === 'Pending');
+    let totalUnpresented = unpresentedList.reduce((a, b) => a + b.amt, 0);
+
+   
+    let uncreditedList = filteredDb.filter(r => r.type === 'IN' && (clearedStatus[r.id] || 'Pending') === 'Pending');
+    let totalUncredited = uncreditedList.reduce((a, b) => a + b.amt, 0);
+
+    let adjustedBalance = bankStmtBal + totalUncredited - totalUnpresented;
+
+ 
+    html = `
+        <div style="background: #ffffff; padding: 20px; border: 2px solid #333; border-radius: 5px; color: #000;">
+            <h3 style="text-align:center; text-decoration: underline;">බැංකු සැසඳුම් ප්‍රකාශය - ${to || 'අද දිනට'}</h3>
+            <table style="width:100%; border-collapse: collapse; margin-top: 20px;">
+                <tr><td style="padding: 8px;"><b>බැංකු ප්‍රකාශයේ ශේෂය</b></td><td style="text-align:right; padding: 8px;"><b>${bankStmtBal.toLocaleString(undefined, {minimumFractionDigits: 2})}</b></td></tr>
+                
+                <tr><td colspan="2" style="padding: 8px; color: #1b5e20;"><b>එකතු කිරීම:</b> තැන්පත් කළත් බැංකු ප්‍රකාශයේ මෙතෙක් සටහන් නොවූ ලැබීම් (Uncredited)</td></tr>`;
     
-    let filteredDb = db.filter(r => (!from || r.date >= from) && (!to || r.date <= to)).sort((a,b) => new Date(a.date) - new Date(b.date));
-    
-    html = `<div style="margin-bottom:20px; padding:15px; background:#e8f5e9; border-radius:10px;">
-        <p><b>බැංකු ප්‍රකාශයේ ශේෂය:</b> රු. ${bankStmtBal.toLocaleString()}</p>
-    </div>
-    <table class="q-table"><thead><tr>
-        <th>දිනය</th>
-        <th>විස්තරය</th>
-        <th>චෙක්පත් අංකය</th> <th>මුදල</th>
-        <th>වර්ගය</th>
-        <th>තත්ත්වය (Status)</th>
-    </tr></thead><tbody>`;
-    
-    filteredDb.forEach(r => {
+    uncreditedList.forEach(r => {
+        html += `<tr><td style="padding-left:40px; font-size: 0.9em;">${r.date.split('T')[0]} - ${r.desc}</td><td style="text-align:right; padding-right: 20px;">${r.amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
+    });
+
+    html += `<tr><td style="padding-left:80px;"><b>මුළු තැන්පත් නොකළ ලැබීම් එකතුව</b></td><td style="text-align:right; border-top:1px solid #000; padding: 8px;">${totalUncredited.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>
+                <tr style="background:#f0f0f0;"><td style="padding: 8px;"><b>උප සමස්තය</b></td><td style="text-align:right; padding: 8px;"><b>${(bankStmtBal + totalUncredited).toLocaleString(undefined, {minimumFractionDigits: 2})}</b></td></tr>
+                
+                <tr><td colspan="2" style="padding: 8px; color: #b71c1c;"><b>අඩු කිරීම:</b> නිකුත් කළත් බැංකුවට මෙතෙක් ඉදිරිපත් නොවූ චෙක්පත් (Unpresented)</td></tr>`;
+
+    unpresentedList.forEach(r => {
+        html += `<tr><td style="padding-left:40px; font-size: 0.9em;">${r.ref || '-'} (${r.date.split('T')[0]}) - ${r.desc}</td><td style="text-align:right; padding-right: 20px;">(${r.amt.toLocaleString(undefined, {minimumFractionDigits: 2})})</td></tr>`;
+    });
+
+    html += `<tr><td style="padding-left:80px;"><b>මුළු ඉදිරිපත් නොකළ චෙක්පත් එකතුව</b></td><td style="text-align:right; border-top:1px solid #000; padding: 8px;">(${totalUnpresented.toLocaleString(undefined, {minimumFractionDigits: 2})})</td></tr>
+                <tr style="border-bottom: 4px double #000; background: #fff8e1;">
+                    <td style="padding: 10px;"><b style="font-size:1.1em;">මුදල් පොතේ ශේෂය (Cash Book Balance)</b></td>
+                    <td style="text-align:right; padding: 10px;"><b style="font-size:1.1em;">${adjustedBalance.toLocaleString(undefined, {minimumFractionDigits: 2})}</b></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="no-print" style="margin-top:40px;">
+            <hr>
+            <h4>චෙක්පත් සහ ලැබීම් තත්ත්වය යාවත්කාලීන කරන්න (Pending/Cleared)</h4>
+            <p style="font-size: 0.9em; color: #666;">*මෙහි Pending ලෙස ඇති දත්ත පමණක් ඉහත සැසඳුම් ප්‍රකාශයට ඇතුළත් වේ.</p>
+            <table class="q-table">
+                <thead><tr><th>දිනය</th><th>විස්තරය</th><th>අංකය</th><th>මුදල</th><th>වර්ගය</th><th>තත්ත්වය</th></tr></thead><tbody>`;
+
+    filteredDb.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(r => {
         let status = clearedStatus[r.id] || 'Pending';
         html += `<tr>
-            <td>${r.date}</td>
+            <td>${r.date.split('T')[0]}</td>
             <td>${r.desc}</td>
-            <td>${r.ref || '-'}</td> <td class="val-col">${r.amt.toLocaleString()}</td>
+            <td>${r.ref || (r.vouch || '-')}</td>
+            <td class="val-col">${r.amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
             <td>${r.type === 'IN' ? 'ලැබීම' : 'ගෙවීම'}</td>
             <td>
                 <select class="status-select ${status === 'Cleared' ? 'status-cleared' : 'status-pending'}" onchange="updateClearedStatus('${r.id}', this.value)">
@@ -681,19 +708,7 @@
             </td>
         </tr>`;
     });
-    // ... ඉතිරි කොටස (සැසඳුම් සාරාංශය) පෙර පරිදිම පවතිනු ඇත ...
-            
-            let unpresented = filteredDb.filter(r => r.type === 'EX' && (clearedStatus[r.id] || 'Pending') === 'Pending').reduce((a,b) => a+b.amt, 0);
-            let uncredited = filteredDb.filter(r => r.type === 'IN' && (clearedStatus[r.id] || 'Pending') === 'Pending').reduce((a,b) => a+b.amt, 0);
-            
-            html += `</tbody></table>
-            <div class="card" style="margin-top:20px; border-top:4px solid var(--deep-blue);">
-                <h4>සැසඳුම් සාරාංශය</h4>
-                <p>ඉදිරිපත් නොකළ චෙක්පත් මුළු එකතුව (Unpresented): <b>රු. ${unpresented.toLocaleString()}</b></p>
-                <p>තැන්පත් නොකළ ලැබීම් මුළු එකතුව (Uncredited): <b>රු. ${uncredited.toLocaleString()}</b></p>
-                <hr>
-                <p style="font-size:18px;"><b>සැසඳුම් ශේෂය: රු. ${(bankStmtBal + uncredited - unpresented).toLocaleString()}</b></p>
-            </div>`;
+    html += `</tbody></table></div>`;
         } else if(currentReport === 'VARIANCE') {
             document.getElementById('report-header-title').innerText = "ප්‍රතිපාදන සහ සැබෑ වියදම් සැසඳුම";
             html = `<table><tr><th>වියදම් කේතය</th><th>ප්‍රතිපාදන</th><th>සැබෑ වියදම</th><th>ශේෂය</th><th>භාවිතය %</th></tr>`;
@@ -702,7 +717,7 @@
                 const budget = allocations[c] || 0;
                 const balance = budget - actual;
                 const perc = budget > 0 ? ((actual / budget) * 100).toFixed(1) : 0;
-                html += `<tr><td><b>${c}</b> - ${CODE_INFO[c]}</td><td class="val-col">${budget.toLocaleString()}</td><td class="val-col">${actual.toLocaleString()}</td><td class="val-col">${balance.toLocaleString()}</td><td style="text-align:center">${perc}%</td></tr>`;
+              html += `<tr><td><b>${c}</b> - ${CODE_INFO[c]}</td><td class="val-col">${budget > 0 ? budget.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td><td class="val-col">${actual > 0 ? actual.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td><td class="val-col">${balance !== 0 ? balance.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td><td style="text-align:center">${perc}%</td></tr>`;
             });
             html += '</table>';
        // generateReport() ශ්‍රිතය තුල QUARTER කොටසට මෙය එක් කරන්න
@@ -711,10 +726,14 @@
     
     const fromDate = new Date(document.getElementById('repFrom').value);
     const toDate = new Date(document.getElementById('repTo').value);
-    const yearStart = new Date(fromDate.getFullYear(), 0, 1); // වසරේ ආරම්භය (ජනවාරි 1)
+    const yearStart = new Date(fromDate.getFullYear(), 0, 1); 
 
-    let opBal = db.filter(r => r.isOp).reduce((a, b) => a + b.amt, 0);
-    let tinTotal = opBal, texTotal = 0;
+    // වසරේ මුල්ම මාසය (ජනවාරි) නම් පමණක් ආරම්භක ශේෂය ගණනය කිරීමට කොන්දේසියක් යොදමු
+    const isFirstQuarter = fromDate.getMonth() === 0;
+
+    // මුළු එකතුව සඳහා ආරම්භක ශේෂය (OpBal) මෙහිදී සෘජුවම ලබා ගනිමු
+    let opBalTotal = db.filter(r => r.isOp).reduce((a, b) => a + b.amt, 0);
+    let tinTotal = opBalTotal, texTotal = 0;
 
     html = `<table class="q-table">
         <thead>
@@ -737,47 +756,58 @@
         </thead>
         <tbody>`;
 
-    const maxLength = Math.max(S_CODES.length, EX_CODES.length);
+  const maxLength = Math.max(S_CODES.length, EX_CODES.length);
 
-    for (let i = 0; i < maxLength; i++) {
-        let s = S_CODES[i] || '';
-        let ex = EX_CODES[i] || '';
+for (let i = 0; i < maxLength; i++) {
+    let s = S_CODES[i] || '';
+    let ex = EX_CODES[i] || '';
 
-        // ලැබීම් ගණනය කිරීම (Income)
-        let sPrev = s ? db.filter(r => r.type === 'IN' && r.source === s && new Date(r.date) < fromDate && new Date(r.date) >= yearStart).reduce((a, b) => a + b.amt, 0) : 0;
-        let sCurr = s ? db.filter(r => r.type === 'IN' && r.source === s && new Date(r.date) >= fromDate && new Date(r.date) <= toDate).reduce((a, b) => a + b.amt, 0) : 0;
+    // --- ලැබීම් ගණනය කිරීම (Income/Sources) ---
+    // ආරම්භක ශේෂය
+    let sOp = s ? db.filter(r => r.isOp && r.source === s).reduce((a, b) => a + b.amt, 0) : 0;
+    // පෙර ලැබීම්
+    let sPrev = s ? db.filter(r => r.type === 'IN' && !r.isOp && r.source === s && new Date(r.date) < fromDate).reduce((a, b) => a + b.amt, 0) : 0;
+    // මෙම කාලයේ ලැබීම්
+    let sCurr = s ? db.filter(r => r.type === 'IN' && r.source === s && new Date(r.date) >= fromDate && new Date(r.date) <= toDate).reduce((a, b) => a + b.amt, 0) : 0;
+    
+    let sTotalPrev = sOp + sPrev;
+
+    // --- ගෙවීම් ගණනය කිරීම (Expenses) ---
+    // පෙර ගෙවීම් (මෙහිදී yearStart පරාසය අවශ්‍ය නම් පමණක් එක් කරන්න)
+    let exPrev = ex ? db.filter(r => r.type === 'EX' && r.code === ex && new Date(r.date) < fromDate && new Date(r.date) >= yearStart).reduce((a, b) => a + b.amt, 0) : 0;
+    // මෙම කාලයේ ගෙවීම්
+    let exCurr = ex ? db.filter(r => r.type === 'EX' && r.code === ex && new Date(r.date) >= fromDate && new Date(r.date) <= toDate).reduce((a, b) => a + b.amt, 0) : 0;
+
+    // මුළු එකතුවන් (Grand Totals update)
+    tinTotal += (sPrev + sCurr); 
+    texTotal += (exPrev + exCurr);
+
+    // HTML පේළිය සෑදීම
+    html += `<tr>
+        <td>${s}</td>
+        <td class="val-col">-</td>
+        <td class="val-col">${sTotalPrev.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+        <td class="val-col">${sCurr.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+        <td class="val-col" style="background:#f9f9f9">${(sTotalPrev + sCurr).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
         
-        // ගෙවීම් ගණනය කිරීම (Expenses)
-        let exPrev = ex ? db.filter(r => r.type === 'EX' && r.code === ex && new Date(r.date) < fromDate && new Date(r.date) >= yearStart).reduce((a, b) => a + b.amt, 0) : 0;
-        let exCurr = ex ? db.filter(r => r.type === 'EX' && r.code === ex && new Date(r.date) >= fromDate && new Date(r.date) <= toDate).reduce((a, b) => a + b.amt, 0) : 0;
-
-        tinTotal += (sPrev + sCurr);
-        texTotal += (exPrev + exCurr);
-
-        html += `<tr>
-            <td>${s}</td>
-            <td class="val-col">-</td>
-            <td class="val-col">${sPrev.toLocaleString()}</td>
-            <td class="val-col">${sCurr.toLocaleString()}</td>
-            <td class="val-col" style="background:#f9f9f9">${(sPrev + sCurr).toLocaleString()}</td>
-            
-            <td>${ex}</td>
-            <td class="val-col">${(allocations[ex] || 0).toLocaleString()}</td>
-            <td class="val-col">${exPrev.toLocaleString()}</td>
-            <td class="val-col">${exCurr.toLocaleString()}</td>
-            <td class="val-col" style="background:#f9f9f9">${(exPrev + exCurr).toLocaleString()}</td>
-        </tr>`;
-    }
+        <td>${ex}</td>
+        <td class="val-col">${(allocations[ex] || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+        <td class="val-col">${exPrev.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+        <td class="val-col">${exCurr.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+        <td class="val-col" style="background:#f9f9f9">${(exPrev + exCurr).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+    </tr>`;
+} // for loop එක අවසන් වන්නේ මෙතැනදීය
+    // ... ඉතිරි footer කොටස එලෙසම පවතී ...
 
     html += `<tr class="q-total-row">
         <td colspan="4">මුළු ලැබීම් එකතුව (ආරම්භක ශේෂය සහිතව)</td>
-        <td class="val-col">${tinTotal.toLocaleString()}</td>
+        <td class="val-col">${tinTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
         <td colspan="4">මුළු වියදම් එකතුව</td>
-        <td class="val-col">${texTotal.toLocaleString()}</td>
+        <td class="val-col">${texTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
     </tr>
     <tr class="q-total-row">
         <td colspan="9" style="text-align:right">අතැති ශේෂය (Balance)</td>
-        <td class="val-col" style="background:var(--gold)">${(tinTotal - texTotal).toLocaleString()}</td>
+        <td class="val-col" style="background:var(--gold)">${(tinTotal - texTotal).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
     </tr>
     </tbody></table>`;
         } else {
@@ -785,8 +815,26 @@
             const codes = filter === 'ALL' ? (currentReport === 'IN' ? S_CODES : EX_CODES) : [filter];
             html = '<table><tr><th>කේතය</th><th>විස්තරය</th><th style="text-align:right;">මුදල (රු.)</th></tr>';
             let total = 0;
-            codes.forEach(c => { const amt = db.filter(r => r.type === currentReport && r.code === c && (!from || r.date >= from) && (!to || r.date <= to)).reduce((a,b) => a + b.amt, 0); html += `<tr><td><b>${c}</b></td><td>${CODE_INFO[c]}</td><td class="val-col">${amt.toLocaleString()}</td></tr>`; total += amt; });
-            html += `<tr style="background:#f1f2f6; font-weight:bold;"><td colspan="2">මුළු එකතුව</td><td class="val-col">${total.toLocaleString()}</td></tr></table>`;
+            // මකා දමා පහත කොටස ඇතුළත් කරන්න:
+    codes.forEach(c => { 
+        const amt = db.filter(r => {
+            const isCorrectType = r.type === currentReport;
+            const isCorrectCode = (r.code === c || r.source === c);
+            
+            if (currentReport === 'IN') {
+                // ලැබීම් වලදී ආරම්භක ශේෂය (isOp) දිනය කුමක් වුවත් පෙන්වීමට:
+                const isWithinDate = (!from || r.date >= from) && (!to || r.date <= to);
+                return isCorrectType && isCorrectCode && (isWithinDate || r.isOp === true);
+            } else {
+                // වියදම් වලදී සාමාන්‍ය පරිදි දිනය අනුව පෙන්වීමට:
+                return isCorrectType && isCorrectCode && (!from || r.date >= from) && (!to || r.date <= to);
+            }
+        }).reduce((a,b) => a + b.amt, 0);
+
+       html += `<tr><td><b>${c}</b></td><td>${CODE_INFO[c]}</td><td class="val-col">${amt > 0 ? amt.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td></tr>`; 
+        total += amt; 
+    });
+            html += `<tr style="background:#f1f2f6; font-weight:bold;"><td colspan="2">මුළු එකතුව</td><td class="val-col">${total.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr></table>`;
         }
         document.getElementById('report-content').innerHTML = html;
         document.getElementById('report-date-range').innerText = `කාලසීමාව: ${(from || "ආරම්භයේ")} සිට ${(to || "අද")} දක්වා`;
@@ -808,7 +856,7 @@
         let fundHtml = '';
         S_CODES.forEach((s, i) => {
             const bal = db.filter(r => r.source === s).reduce((a,b) => a + (b.type==='IN'?b.amt:-b.amt), 0);
-            fundHtml += `<div class="fund-box" style="background:${COLORS[i%COLORS.length]}"><div>${s}</div><div style="font-size:18px;">රු. ${bal.toLocaleString()}</div><small>${CODE_INFO[s]}</small></div>`;
+            fundHtml += `<div class="fund-box" style="background:${COLORS[i%COLORS.length]}"><div>${s}</div><div style="font-size:18px;">රු. ${bal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div><small>${CODE_INFO[s]}</small></div>`;
         });
         document.getElementById('dash-funds').innerHTML = fundHtml;
     }
@@ -816,8 +864,8 @@
     async function loadRecentTable() {
         const db = await getData();
         let html = '<table><tr><th>දිනය</th><th>විස්තරය</th><th>වවුචර්</th><th>මුදල</th><th>ක්‍රියා</th></tr>';
-        db.sort((a,b) => b.id - a.id).slice(0,10).forEach(r => {
-            html += `<tr><td>${r.date}</td><td>${r.desc}</td><td>${r.vouch||r.ref}</td><td style="color:${r.type==='IN'?'green':'red'}">${r.amt.toFixed(2)}</td><td>${userRole==='ADMIN'?'<button onclick="deleteData('+r.id+')">Delete</button>':'-'}</td></tr>`;
+        db.sort((a,b) => b.id - a.id).slice(0,5).forEach(r => {
+            html += `<tr><td>${r.date.split('T')[0]}</td><td>${r.desc}</td><td>${r.vouch||r.ref}</td><td style="color:${r.type==='IN'?'green':'red'}">${r.amt.toFixed(2)}</td><td>${userRole==='ADMIN'?'<button onclick="deleteData('+r.id+')">Delete</button>':'-'}</td></tr>`;
         });
         document.getElementById('recent-transactions-table').innerHTML = html + '</table>';
     }
@@ -836,7 +884,16 @@
         projs.forEach(p => {
             const pin = db.filter(r => r.proj === p.projectName && r.type === 'IN').reduce((a,b)=>a+b.amt,0);
             const pex = db.filter(r => r.proj === p.projectName && r.type === 'EX').reduce((a,b)=>a+b.amt,0);
-            html += `<tr><td>${p.projectName}</td><td>${p.est.toLocaleString()}</td><td>${pin.toLocaleString()}</td><td>${pex.toLocaleString()}</td><td>${(pin-pex).toLocaleString()}</td></tr>`;
+            // (ඇස්තමේන්තුව + ලැබීම්) - වියදම් ලෙස ශේෂය ගණනය කිරීම
+const projectBalance = (p.est + pin) - pex;
+
+html += `<tr>
+            <td>${p.projectName}</td>
+            <td>${p.est.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+            <td>${pin > 0 ? pin.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td>
+	    <td>${pex > 0 ? pex.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td>
+            <td style="font-weight:bold;">${projectBalance.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+         </tr>`;
         });
         document.getElementById('project-list-table').innerHTML = html + '</table>';
     }
