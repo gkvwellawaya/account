@@ -3,201 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <title>ගිණුම්කරණ පද්ධතිය - මො/ගම්පංගුව කනිෂ්ඨ විද්‍යාලය</title>
-    <style>
-        :root { 
-            --primary: #1b5e20; 
-            --secondary: #2e7d32; 
-            --accent: #fbc02d; 
-            --success: #27ae60; 
-            --danger: #e74c3c; 
-            --light: #f9fbe7; 
-            --gold: #ffeb3b; 
-            --white: #ffffff; 
-            --purple: #8e44ad;
-            --deep-blue: #0984e3;
-            --glass: rgba(255, 255, 255, 0.1);
-        }
-        body { font-family: 'Segoe UI', 'Iskoola Pota', sans-serif; margin: 0; background: var(--light); display: flex; }
-        
-        .sidebar { width: 280px; height: 100vh; background: var(--primary); color: white; position: fixed; overflow-y: auto; box-shadow: 2px 0 15px rgba(0,0,0,0.2); z-index: 100; display: flex; flex-direction: column; }
-        .sidebar-header { text-align: center; padding: 25px 15px; background: #0a3d0e; color: var(--gold); font-weight: bold; font-size: 18px; border-bottom: 3px solid var(--gold); }
-        .nav-link { padding: 15px 20px; display: block; color: #dcedc8; text-decoration: none; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); transition: 0.3s; font-size: 15px; }
-        .nav-link:hover, .nav-link.active { background: var(--secondary); color: var(--gold); border-left: 5px solid var(--gold); padding-left: 25px; }
-        
-        .main-content { margin-left: 280px; padding: 30px; width: calc(100% - 280px); position: relative; min-height: 100vh; }
-        
-        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; margin-bottom: 35px; perspective: 1000px; }
-        .stat-card { 
-            padding: 30px; border-radius: 20px; color: white; text-align: center; 
-            transition: transform 0.5s, box-shadow 0.5s; 
-            transform-style: preserve-3d;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-            position: relative;
-        }
-        .stat-card:hover { transform: rotateX(10deg) rotateY(-5deg) translateY(-10px); box-shadow: 0 20px 35px rgba(0,0,0,0.2); }
-        .stat-card h5 { margin: 0; font-size: 16px; opacity: 0.9; text-transform: uppercase; }
-        .stat-card h2 { margin: 10px 0 0; font-size: 32px; font-weight: 800; }
-
-        .fund-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
-        .fund-box { 
-            padding: 20px; border-radius: 15px; color: white; text-align: center; font-weight: bold; 
-            cursor: pointer; transition: 0.3s; border-bottom: 5px solid rgba(0,0,0,0.2);
-            display: flex; flex-direction: column; justify-content: center; min-height: 80px;
-        }
-        .fund-box:hover { transform: scale(1.05); box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
-        .fund-box small { font-size: 11px; opacity: 0.8; margin-top: 5px; }
-
-        .school-header-banner { 
-            background: linear-gradient(135deg, #1b5e20 0%, #388e3c 100%); 
-            color: var(--gold); 
-            padding: 20px 20px; 
-            text-align: center; 
-            border-radius: 25px; 
-            margin-bottom: 35px; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.3); 
-            border: 2px solid var(--gold);
-        }
-
-        .card { background: var(--white); padding: 30px; border-radius: 20px; box-shadow: 0 5px 25px rgba(0,0,0,0.05); margin-bottom: 25px; }
-        .section-title { color: var(--primary); border-left: 6px solid var(--accent); padding-left: 15px; margin-bottom: 25px; font-size: 24px; font-weight: bold; }
-        
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 0 20px rgba(0,0,0,0.05); }
-        th, td { padding: 15px; border: 1px solid #eee; text-align: left; }
-        th { background: var(--primary); color: var(--gold); font-weight: 600; text-transform: uppercase; font-size: 13px; }
-        tr:hover { background-color: #f1f8e9; }
-
-        .q-table { width: 100%; border-collapse: collapse; border: 2px solid #2c3e50 !important; }
-        .q-table th, .q-table td { border: 1px solid #bdc3c7 !important; padding: 10px 6px; font-size: 12px; }
-        .q-header { background: #2c3e50 !important; color: #ffffff !important; text-align: center; font-weight: bold; text-transform: uppercase; }
-        .val-col { text-align: right; font-weight: bold; width: 110px; background: #fdfefe; }
-        .q-total-row { background: #ecf0f1 !important; font-weight: 800; border-top: 2px solid #2c3e50 !important; }
-
-        .report-school-name { display: none; text-align: center; margin-bottom: 10px; }
-        .report-school-name h1 { margin: 0; color: #1b5e20; font-size: 28px; }
-
-        .form-row { display: flex; gap: 20px; margin-bottom: 20px; }
-        .field { flex: 1; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--secondary); }
-        input, select, textarea { width: 100%; padding: 12px; border: 1.5px solid #dcedc8; border-radius: 10px; transition: 0.3s; }
-        input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 5px rgba(27, 94, 32, 0.2); }
-        .btn { padding: 14px 25px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .btn:active { transform: scale(0.98); }
-
-        .status-select { padding: 4px; font-size: 11px; border-radius: 5px; cursor: pointer; }
-        .status-cleared { background: #d4edda; color: #155724; }
-        .status-pending { background: #fff3cd; color: #856404; }
-
-        .creator-brand {
-            margin-top: auto;
-            padding: 30px 15px;
-            text-align: center;
-            background: #0a3d0e;
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
-        .creator-name {
-            display: block;
-            color: var(--gold);
-            font-size: 16px;
-            font-weight: 800;
-            letter-spacing: 1px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            margin-bottom: 5px;
-        }
-        .creator-sub { color: #aed581; font-size: 11px; }
-
-        .code-tag-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .code-tag { background: #fdfdfd; border: 1px solid #eee; padding: 12px; border-radius: 12px; display: flex; align-items: center; }
-        .code-num { background: var(--primary); color: var(--gold); padding: 4px 10px; border-radius: 6px; margin-right: 12px; font-family: monospace; font-weight: bold; }
-
-        #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.8); display: none; justify-content: center; align-items: center; z-index: 10000; font-weight: bold; color: var(--primary); }
-
-        @media print {
-            @page { size: A4 landscape; margin: 10mm 5mm 10mm 5mm; }
-            .sidebar, .no-print, .school-header-banner, button, .footer-credit { display: none !important; }
-            .main-content { margin-left: 0 !important; padding: 0 !important; width: 100% !important; }
-            .card { box-shadow: none !important; border: none !important; padding: 0 !important; }
-            .report-school-name { display: block !important; margin-bottom: 5px !important; text-align: center; }
-            .report-school-name h1 { font-size: 20px !important; margin: 0 !important; padding: 0 !important; }
-            #report-header-title { font-size: 18px !important; margin: 5px 0 !important; }
-            #report-date-range { font-size: 12px !important; margin-bottom: 10px !important; }
-            table, .q-table { width: 100% !important; border-collapse: collapse !important; font-size: 10pt !important; }
-            th, td { padding: 4px 2px !important; border: 1px solid #333 !important; }
-            tr { page-break-inside: avoid; }
-        }
-
-        #login-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: var(--primary); display: flex; justify-content: center; align-items: center; z-index: 9999; }
-        .admin-only, .staff-only { display: none; }
-        
-        .backup-btn { 
-            background: #576574; 
-            color: white; 
-            border-bottom: 1px solid rgba(255,255,255,0.1); 
-            padding: 4px 8px !important; 
-            font-size: 9px !important; 
-            margin: 3px 15px; 
-            border-radius: 6px;
-            display: block;
-            text-align: center;
-        }
-        .backup-btn:hover { background: #2c3e50; color: var(--gold); }
-        .print-signatures { display: none; }
-
-        @media print {
-            .print-signatures { display: flex !important; justify-content: space-between; text-align: center; margin-top: 50px; width: 100%; }
-            .sig-box { width: 30%; border-top: 1px solid #000; padding-top: 5px; font-size: 12px; }
-        }
-
-        /* Status indicators */
-        /* නව කේතය */
-/* Rounded, 3D pill shape */
-#connection-status { 
-    padding: 12px 15px; 
-    text-align: center; 
-    font-size: 13px; 
-    font-weight: 800; 
-    border-radius: 50px; /* Fully rounded edges */
-    margin: 15px; 
-    letter-spacing: 1px;
-    /* 3D bevel effect */
-    border: 1px solid rgba(255,255,255,0.3);
-    box-shadow: 
-        inset 0 2px 4px rgba(255,255,255,0.4), /* Highlight on top */
-        inset 0 -2px 4px rgba(0,0,0,0.2),      /* Shadow on bottom */
-        0 4px 10px rgba(0,0,0,0.3);            /* Outer shadow */
-}
-
-/* Online 3D Glow */
-.status-glow-online { 
-    background: linear-gradient(180deg, #2ecc71 0%, #27ae60 100%) !important; 
-    color: white !important; 
-    animation: pulse-glow 2s infinite; 
-}
-
-/* Offline 3D Look */
-.status-glow-offline { 
-    background: linear-gradient(180deg, #e74c3c 0%, #c0392b 100%) !important; 
-    color: white !important; 
-    /* Persistent red glow */
-    box-shadow: 0 0 20px rgba(231, 76, 60, 0.8), inset 0 2px 4px rgba(255,255,255,0.4);
-}
-@keyframes pulse-glow {
-    0% { 
-        box-shadow: 0 0 15px rgba(46, 204, 113, 0.6), 0 4px 10px rgba(0,0,0,0.3); 
-    }
-    50% { 
-        /* Increased blur to 50px and spread to 10px for a 'nuclear' glow */
-        box-shadow: 0 0 20px 10px rgba(46, 204, 113, 1), 0 4px 15px rgba(0,0,0,0.4); 
-    }
-    100% { 
-        box-shadow: 0 0 15px rgba(46, 204, 113, 0.6), 0 4px 10px rgba(0,0,0,0.3); 
-    }
-}
-    </style>
+    <link rel="stylesheet" href="styles.css">
+    <!-- jsPDF & html2canvas for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 
 <div id="loading-overlay">දත්ත සැකසෙමින් පවතී... කරුණාකර රැඳී සිටින්න.</div>
+<div id="toast" class="toast">දත්ත සාර්ථකව සුරැකිණි! ✅</div>
 
+<!-- Confirmation Dialog -->
+<div id="confirmDialog" class="confirm-dialog">
+    <div class="confirm-content">
+        <h3 id="confirmTitle" style="color: var(--primary); margin-top: 0;"></h3>
+        <p id="confirmMessage"></p>
+        <div class="confirm-buttons">
+            <button id="confirmYes" class="btn" style="background: var(--danger); color: white; min-width: 100px;">ඔව්</button>
+            <button id="confirmNo" class="btn" style="background: var(--secondary); color: white; min-width: 100px;">නැත</button>
+        </div>
+    </div>
+</div>
+
+<!-- Code Details Modal -->
+<div id="codeDetailsModal" class="code-details-modal">
+    <div class="code-details-content">
+        <div class="code-details-header">
+            <h3 id="modalCodeTitle" style="margin: 0;">කේතයේ විස්තර</h3>
+            <button class="close-modal-btn" onclick="closeCodeDetails()">×</button>
+        </div>
+        <div id="codeDetailsContent"></div>
+    </div>
+</div>
+
+<!-- Login Screen -->
 <div id="login-overlay">
     <div class="card" style="text-align:center; width: 380px; padding: 50px;">
         <h2 style="color:var(--primary); margin-bottom: 5px;">මූල්‍ය කළමනාකරණ පද්ධතිය</h2>
@@ -210,26 +49,28 @@
     </div>
 </div>
 
+<!-- Sidebar -->
 <div class="sidebar no-print">
     <div class="sidebar-header">මො/ගම්පංගුව කනිෂ්ඨ විද්‍යාලය</div>
     <div id="connection-status" class="status-glow-offline">සම්බන්ධතාවය පරීක්ෂා කරමින් පවතී...</div>
     <div style="padding-top: 10px;">
         <a class="nav-link active" id="nav-dash" onclick="showSec('dash')">📊 ප්‍රධාන පුවරුව</a>
         <a class="nav-link staff-only" id="nav-entry" onclick="showSec('entry')">📝 දත්ත ඇතුළු කිරීම</a>
-        <a class="nav-link staff-only" id="nav-proj" onclick="showSec('proj')">🏗️ ව්‍යාපෘති කළමනාකරණය</a>
         <a class="nav-link" id="nav-cashbook" onclick="openReport('CASHBOOK')">📚 මුදල් පොත</a>
-        <a class="nav-link" id="nav-inc" onclick="openReport('IN')">📈 ලැබීම් විශ්ලේෂණ වාර්තා</a>
-        <a class="nav-link" id="nav-exp" onclick="openReport('EX')">📉 ගෙවීම් විශ්ලේෂණ වාර්තා</a>
-        <a class="nav-link" id="nav-variance" onclick="openReport('VARIANCE')">📊 අයවැය සැසඳුම</a>
+        <a class="nav-link" id="nav-inc" onclick="openReport('IN')">📈 ලැබීම් විශ්ලේෂණ වාර්තා </a>
+        <a class="nav-link" id="nav-exp" onclick="openReport('EX')">📉 ගෙවීම් විශ්ලේෂණ වාර්තා </a>
         <a class="nav-link" id="nav-quarter" onclick="openReport('QUARTER')">📅 සිව්මස් වාර්තාව</a>
         <a class="nav-link" id="nav-bank" onclick="openReport('BANK')">🏦 බැංකු සැසඳුම ප්‍රකාශය</a>
+        <a class="nav-link staff-only" id="nav-proj" onclick="showSec('proj')">🏗️ ව්‍යාපෘති කළමනාකරණය</a>
+        <a class="nav-link" id="nav-variance" onclick="openReport('VARIANCE')">📊 අයවැය සැසඳුම</a>
         <a class="nav-link" id="nav-codes" onclick="showSec('codes')">📑 ගිණුම් කේත විස්තරය</a>
+        <a class="nav-link" onclick="manualRefresh()" style="background: var(--deep-blue); color: white; margin-top: 10px; border-left: 5px solid var(--gold); display: flex; align-items: center; justify-content: center; padding: 5px 20px; border-radius: 10px; cursor: pointer; transition: all 0.3s;">🔄 දත්ත අලුත් කරන්න</a>
         
-        <a class="nav-link" onclick="manualRefresh()" style="background: var(--deep-blue); color: white; margin-top: 10px; border-left: 5px solid var(--gold); display: flex; align-items: center;">🔄 දත්ත අලුත් කරන්න</a>
-        
-        <div style="margin-top: 20px; border-top: 2px solid var(--gold);">
-            <a class="nav-link backup-btn" onclick="downloadBackupJSON()">💽 DATA BACKUP (JSON)</a>
-            <a class="nav-link backup-btn" onclick="downloadBackupCSV()">📜 DATA DOWNLOAD (CSV)</a>
+        <div style="margin-top: 10px; border-top: 2px solid var(--gold); padding: 10px 5px;">
+            <div style="display: flex; gap: 5px; justify-content: center;">
+                <button class="backup-btn" style="flex: 1; margin: 0;" onclick="downloadBackupJSON()">💽 JSON BACKUP</button>
+                <button class="backup-btn" style="flex: 1; margin: 0;" onclick="downloadBackupCSV()">📜 CSV DOWNLOAD</button>
+            </div>
         </div>
     </div>
     
@@ -242,12 +83,14 @@
     </div>
 </div>
 
+<!-- Main Content -->
 <div class="main-content">
     <div class="school-header-banner">
         <h1 style="font-size: 60px; margin: 0;">මො/ගම්පංගුව කනිෂ්ඨ විද්‍යාලය</h1>
         <div style="margin-top: 10px; font-size: 30px; letter-spacing: 3px; opacity: 0.8;">මූල්‍ය කළමනාකරණ පද්ධතිය</div>
     </div>
 
+    <!-- Report Section -->
     <div id="sec-report" class="section" style="display:none;">
         <div id="printable-area" class="card">
             <div class="report-school-name">
@@ -258,20 +101,24 @@
             <h2 id="report-header-title" style="text-align:center; color: var(--primary);"></h2>
             <p id="report-date-range" style="text-align:center; font-weight:bold;"></p>
             <div id="report-content"></div>
-            <div class="no-print" style="margin-top:30px; display:flex; gap:15px; background:#f9f9f9; padding:25px; border-radius:15px; border: 1px solid #eee;">
+            <div class="no-print" style="margin-top:30px; display:flex; gap:15px; background:#f9f9f9; padding:25px; border-radius:15px; border: 1px solid #eee; align-items: flex-end; flex-wrap: wrap;">
                 <div class="field"><label>සිට</label><input type="date" id="repFrom"></div>
                 <div class="field"><label>දක්වා</label><input type="date" id="repTo"></div>
                 <div class="field" id="filter-box" style="display:none;"><label>ගිණුම් කේතය</label><select id="repFilter"></select></div>
                 <div class="field" id="bank-bal-box" style="display:none;">
                     <label>බැංකු ප්‍රකාශයේ ශේෂය</label>
-                    <input type="number" id="bankStmtInput" placeholder="0.00" oninput="generateReport()">
+                    <input type="text" id="bankStmtInput" placeholder="0.00" oninput="formatAmount(this)" onblur="generateReport()">
                 </div>
-                <button class="btn" style="align-self: flex-end; background: var(--primary); color: var(--gold);" onclick="generateReport()">වාර්තාව සකසන්න</button>
-                <button class="btn" style="align-self: flex-end; background: var(--secondary); color: white;" onclick="window.print()">Print Report</button>
+                <div class="button-container">
+                    <button class="btn" style="background: var(--primary); color: var(--gold);" onclick="generateReport()">වාර්තාව සකසන්න</button>
+                    <button class="btn" id="print-btn" style="background: var(--secondary); color: white;" onclick="window.print()">Print Report</button>
+                    <button class="btn pdf-export-btn" id="pdf-btn" style="background: #e74c3c; color: white;" onclick="exportToPDF()">📄 PDF</button>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Dashboard Section -->
     <div id="sec-dash" class="section">
         <h2 class="section-title">වත්මන් මූල්‍ය තත්ත්වය</h2>
         <div class="stat-grid">
@@ -294,42 +141,49 @@
         </div>
     </div>
 
+    <!-- Entry Section -->
     <div id="sec-entry" class="section" style="display:none;">
         <h2 class="section-title">නව ගනුදෙනු ඇතුළත් කිරීම</h2>
         <div class="form-row">
-            <div class="card field" style="border-top: 8px solid var(--success);">
+            <div class="card field" style="border-top: 8px solid var(--success); flex: 1; min-width: 300px;">
                 <h3 style="color:var(--success); margin-top: 0;">ලැබීම් (හර)</h3>
+                <div style="background: #e8f5e9; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                    <p style="margin: 0; font-size: 14px; color: #2e7d32;">⚠️ සියළුම දත්ත ඇතුළත් කරන්න...</p>
+                </div>
                 <input type="hidden" id="edit-id-in">
                 <div class="form-row">
-                    <div class="field"><label>දිනය</label><input type="date" id="inDate"></div>
-                    <div class="field"><label>ලදුපත් අංකය</label><input type="text" id="inRef"></div>
+                    <div class="field"><label class="required">දිනය</label><input type="date" id="inDate"></div>
+                    <div class="field"><label class="required">ලදුපත් අංකය</label><input type="text" id="inRef"></div>
                 </div>
                 <div class="form-row">
-                    <div class="field"><label>ලැබීම් කේතය</label><select id="inCodeSelect"></select></div>
-                    <div class="field"><label>මුදල (රු.)</label><input type="number" id="inAmt"></div>
+                    <div class="field"><label class="required">ලැබීම් කේතය</label><select id="inCodeSelect"></select></div>
+                    <div class="field"><label class="required">මුදල (රු.)</label><input type="text" id="inAmt" class="amount-input" pattern="[0-9]*\.?[0-9]{0,2}" oninput="formatAmount(this)"></div>
                 </div>
                 <div class="field" style="margin-bottom: 15px;"><label>ව්‍යාපෘතිය</label><select id="inProjSelect"></select></div>
-                <label>විස්තරය</label><textarea id="inDesc" rows="2"></textarea>
-                <button class="btn" style="margin-top:20px; width:100%; background: var(--success); color:white;" id="btn-save-in" onclick="saveData('IN')">ලැබීම ගබඩා කරන්න</button>
+                <label class="required">විස්තරය</label><textarea id="inDesc" rows="2"></textarea>
+                <button class="btn" style="margin-top:20px; width:100%; background: var(--success); color:white;" id="btn-save-in" onclick="saveData('IN')">ලැබීම ගිණුම්ගත කරන්න</button>
             </div>
-            <div class="card field" style="border-top: 8px solid var(--danger);">
+            <div class="card field" style="border-top: 8px solid var(--danger); flex: 1; min-width: 300px;">
                 <h3 style="color:var(--danger); margin-top: 0;">ගෙවීම් (බැර)</h3>
+                <div style="background: #ffebee; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                    <p style="margin: 0; font-size: 14px; color: #c62828;">⚠️ සියළුම දත්ත ඇතුළත් කරන්න...</p>
+                </div>
                 <input type="hidden" id="edit-id-ex">
                 <div class="form-row">
-                    <div class="field"><label>දිනය</label><input type="date" id="exDate"></div>
-                    <div class="field"><label>වවුචර් අංකය</label><input type="text" id="exVoucher"></div>
+                    <div class="field"><label class="required">දිනය</label><input type="date" id="exDate"></div>
+                    <div class="field"><label class="required">වවුචර් අංකය</label><input type="text" id="exVoucher"></div>
                 </div>
                 <div class="form-row">
                     <div class="field"><label>චෙක්පත් අංකය</label><input type="text" id="exRef"></div>
-                    <div class="field"><label>මුදල (රු.)</label><input type="number" id="exAmt"></div>
+                    <div class="field"><label class="required">මුදල (රු.)</label><input type="text" id="exAmt" class="amount-input" pattern="[0-9]*\.?[0-9]{0,2}" oninput="formatAmount(this)"></div>
                 </div>
                 <div class="form-row">
-                    <div class="field"><label>ගෙවීම් කේතය</label><select id="exCodeSelect"></select></div>
-                    <div class="field"><label>මූලාශ්‍ර අරමුදල</label><select id="exSourceSelect"></select></div>
+                    <div class="field"><label class="required">ගෙවීම් කේතය</label><select id="exCodeSelect"></select></div>
+                    <div class="field"><label class="required">මූලාශ්‍ර අරමුදල</label><select id="exSourceSelect"></select></div>
                 </div>
                 <div class="field" style="margin-bottom: 15px;"><label>ව්‍යාපෘතිය</label><select id="exProjSelect"></select></div>
-                <label>විස්තරය</label><textarea id="exDesc" rows="2"></textarea>
-                <button class="btn" style="margin-top:20px; width:100%; background: var(--danger); color:white;" id="btn-save-ex" onclick="saveData('EX')">ගෙවීම ගබඩා කරන්න</button>
+                <label class="required">විස්තරය</label><textarea id="exDesc" rows="2"></textarea>
+                <button class="btn" style="margin-top:20px; width:100%; background: var(--danger); color:white;" id="btn-save-ex" onclick="saveData('EX')">ගෙවීම ගිණුම්ගත කරන්න</button>
             </div>
         </div>
         
@@ -338,15 +192,15 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
                 <div style="border-right: 1px solid #eee; padding-right: 20px;">
                     <label><b>ආරම්භක ශේෂයන්</b></label>
-                    <div class="field"><label>අරමුදල</label><select id="opCodeSelect"></select></div>
-                    <div class="field"><label>මුදල</label><input type="number" id="opAmt"></div>
-                    <button class="btn" style="margin-top:10px; width:100%; background: var(--accent); color: var(--primary);" onclick="saveOpening()">ශේෂය අලුතින් සකසන්න</button>
+                    <div class="field"><label class="required">අරමුදල</label><select id="opCodeSelect"></select></div>
+                    <div class="field"><label class="required">මුදල</label><input type="text" id="opAmt" class="amount-input" pattern="[0-9]*\.?[0-9]{0,2}" oninput="formatAmount(this)"></div>
+                    <button class="btn" style="margin-top:10px; width:100%; background: var(--accent); color: var(--primary);" onclick="saveOpening()">ශේෂය වෙනස් කරන්න</button>
                 </div>
                 <div>
                     <label><b>වාර්ෂික අයවැය ප්‍රතිපාදන</b></label>
-                    <div class="field"><label>ගෙවීම් කේතය</label><select id="allocCodeSelect"></select></div>
-                    <div class="field"><label>වෙන්කරන ලද මුදල</label><input type="number" id="allocAmt"></div>
-                    <button class="btn" style="margin-top:10px; width:100%; background: var(--purple); color: white;" onclick="saveAllocation()">ප්‍රතිපාදන ගබඩා කරන්න</button>
+                    <div class="field"><label class="required">ගෙවීම් කේතය</label><select id="allocCodeSelect"></select></div>
+                    <div class="field"><label class="required">වෙන්කරන ලද මුදල</label><input type="text" id="allocAmt" class="amount-input" pattern="[0-9]*\.?[0-9]{0,2}" oninput="formatAmount(this)"></div>
+                    <button class="btn" style="margin-top:10px; width:100%; background: var(--purple); color: white;" onclick="saveAllocation()">ප්‍රතිපාදන ගිණුම්ගත කරන්න</button>
                 </div>
             </div>
         </div>
@@ -357,35 +211,37 @@
         </div>
     </div>
 
+    <!-- Codes Section -->
+    <div id="sec-codes" class="section" style="display:none;">
+        <h2 class="section-title">ගිණුම් කේත සහ විස්තර</h2>
+        <div class="form-row">
+            <div class="card field" style="border-top: 5px solid var(--primary);">
+                <h3 style="color:var(--primary);">ලැබීම් කේත (S Codes)</h3>
+                <div id="codes-s" class="code-tag-container"></div>
+            </div>
+            <div class="card field" style="border-top: 5px solid var(--danger);">
+                <h3 style="color:var(--danger);">ගෙවීම් කේත ( REx / CEx Codes)</h3>
+                <div id="codes-ex" class="code-tag-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Projects Section -->
     <div id="sec-proj" class="section" style="display:none;">
         <h2 class="section-title">ව්‍යාපෘති කළමනාකරණය</h2>
         <div class="card">
             <div class="form-row">
                 <input type="hidden" id="edit-proj-id">
-                <div class="field"><label>ව්‍යාපෘතියේ නම</label><input type="text" id="projName" placeholder="උදා: ගොඩනැගිල්ල අලුත්වැඩියා කිරීම"></div>
-                <div class="field"><label>ඇස්තමේන්තුගත මුදල (රු.)</label><input type="number" id="projEst"></div>
-                <button class="btn" style="align-self: flex-end; background: var(--primary); color: var(--gold);" onclick="saveProject()">ව්‍යාපෘතිය සුරකින්න</button>
+                <div class="field"><label class="required">ව්‍යාපෘතියේ නම</label><input type="text" id="projName"></div>
+                <div class="field"><label class="required">ඇස්තමේන්තුගත මුදල (රු.)</label><input type="text" id="projEst" class="amount-input" pattern="[0-9]*\.?[0-9]{0,2}" oninput="formatAmount(this)"></div>
+                <button class="btn" style="align-self: flex-end; background: var(--primary); color: var(--gold);" onclick="saveProject()">ව්‍යාපෘතිය ගිණුම්ගත කරන්න</button>
             </div>
         </div>
         <div class="card"><div id="project-list-table"></div></div>
-		<div id="proj-detail-view" class="card" style="display:none; border-top: 5px solid var(--primary);">
+        <div id="proj-detail-view" class="card" style="display:none; border-top: 5px solid var(--primary);">
             <h3 id="detail-proj-name" style="color:var(--primary);"></h3>
             <div id="project-expenses-list"></div>
             <button class="btn" style="margin-top:20px; background:#95a5a6; color:white;" onclick="document.getElementById('proj-detail-view').style.display='none'">ආපසු</button>
-        </div>
-    </div>
-
-    <div id="sec-codes" class="section" style="display:none;">
-        <h2 class="section-title">ගිණුම් කේත සහ විස්තර</h2>
-        <div class="form-row">
-            <div class="card field" style="border-top: 5px solid var(--primary);">
-                <h3 style="color:var(--primary);">ලැබීම් කේත (S-Codes)</h3>
-                <div id="codes-s" class="code-tag-container"></div>
-            </div>
-            <div class="card field" style="border-top: 5px solid var(--danger);">
-                <h3 style="color:var(--danger);">ගෙවීම් කේත (Expense Codes)</h3>
-                <div id="codes-ex" class="code-tag-container"></div>
-            </div>
         </div>
     </div>
 
@@ -394,698 +250,6 @@
     </div>
 </div>
 
-
-
-<script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzwjVb9IInEEbZ8gPfIblPQ2VkZCNUwyBCpbPGzt7RNhJl5B_UCYJ3iLovsmoHsUtPibg/exec";
-
-    const S_CODES = ["S1","S2","S3","S4","S5","S6","S7","S8","S9","S10"];
-    const EX_CODES = ["REx1","REx2","REx3","REx4","REx5","REx6","REx7","CEx1","CEx2","CEx3","CEx4","CEx5","CEx6"];
-    const CODE_INFO = {
-        "S1":"ඒකාබද්ධ අරමුදල් සහ පළාත් සභා අරමුදල්", "S2":"සහයෝගිතා ගිවිසුම් යටතේ ක්‍රියාත්මක වන වැඩසටහන් හා ව්‍යාපෘති සඳහා ලැබෙන අරමුදල්", "S3":"රජයේ ආධාර", "S4":"පාසල් පාදක ඉගෙනුම් ප්‍රවර්ධන ප්‍රදානයන්, ගුණාත්මක යෙදවුම් හා උසස් මට්ටමේ ඉගෙනුම් ක්‍රියාවලි සඳහා ලැබෙන අරමුදල්", "S5":"රජය විසින් අනුමත හා ලියාපදිංචි රාජ්‍ය නොවන සංවිධාන වලින් ලැබෙන ආධාර", "S6":"පාසලේ දියුණුව වෙනුවෙන් ස්ව කැමැත්තෙන් දායකත්වය ලබා දෙන ඕනෑම පාර්ශවයක පරිත්‍යාග", "S7":"පාසලට අයත් වත්කම් වලින් උපයා ගන්නා ආදායම්", "S8":"පාසල් සංවර්ධන සමිති සාමාජික මුදල්", "S9":"පාසලේ ඉගෙනුම් ඉගැන්වීම් ක්‍රියාවලියට අදාළ අත්‍යවශ්‍ය ක්‍රියාකාරකම් සඳහා ලැබීම්", "S10":"පාසල් සංවර්ධන සමිතිය මඟින් තීරණය කරනු ලබන පාසලේ අත්‍යවශ්‍ය වියදම් පියවා ගැනීම සඳහා වන අරමුදල්",
-        "REx1":"විෂය මාලා ක්‍රියාත්මක කිරීමට අදාළ පුනරාවර්තන වියදම්", "REx2":"උපදේශන, උසස් අධ්‍යාපන හා විෂය සමගාමී ක්‍රියාකාරකම්", "REx3":"අධ්‍යාපන පරිපාලන හා උපයෝගිතා සේවා හා සුභසාධන කටයුතු", "REx4":"කාර්ය මණ්ඩල පාරිශ්‍රමික", "REx5":"ප්‍රාග්ධන භාණ්ඩ හා උපකරණ නඩත්තු/අලුත්වැඩියා", "REx6":"පාසලේ ගොඩනැගිලි සුළු නඩත්තු/අලුත්වැඩියා", "REx7":"පවිත්‍රතා හා පිරිසිදු කිරීම්", 
-        "CEx1":"මූලික පහසුකම් - නව සැපයීම්", "CEx2":"විෂය මාලා ක්‍රියාත්මක කිරීමට අදාළ ප්‍රාග්ධන වියදම්", "CEx3":"පුස්තකාල පොත් මිලට ගැනීම්", "CEx4":"ගොඩනැගිලි නව ඉදිකිරීම්, වැඩිදියුණු කිරීම් හා වෙනත් ප්‍රාග්ධන වියදම්", "CEx5":"ප්‍රාග්ධන උපකරණ මිලට ගැනීම්", "CEx6":"විශේෂ ව්‍යාපෘති සඳහා විශේෂ ප්‍රාග්ධන ආධාර"
-    };
-    const COLORS = ["#2e7d32", "#f9a825", "#388e3c", "#fbc02d", "#43a047", "#fdd835", "#4caf50", "#ffeb3b", "#66bb6a", "#ffee58"];
-
-    let currentReport = '';
-    let userRole = '';
-    let allocations = JSON.parse(localStorage.getItem('sch_allocations') || '{}');
-    let clearedStatus = JSON.parse(localStorage.getItem('sch_cleared') || '{}');
-    let offlineQueue = JSON.parse(localStorage.getItem('sch_offline_queue') || '[]');
-    let initialized = false;
-
-    // Connection Watcher
-    function updateOnlineStatus() {
-        const statusDiv = document.getElementById('connection-status');
-        if (navigator.onLine) {
-            statusDiv.innerHTML = "🟢 ONLINE";
-            statusDiv.className = "status-glow-online";
-            syncOfflineData();
-        } else {
-            statusDiv.innerHTML = "🔴 OFFLINE";
-            statusDiv.className = "status-glow-offline";
-        }
-    }
-    window.addEventListener('online', updateOnlineStatus);
-    window.addEventListener('offline', updateOnlineStatus);
-
-    async function checkLogin() {
-        const pass = document.getElementById('passInput').value;
-        if(pass === "MyApp") userRole = 'ADMIN';
-        else if(pass === "Staff123") userRole = 'STAFF';
-        else if(pass === "Guest") userRole = 'GUEST';
-        else { alert("මුරපදය වැරදියි!"); return; }
-        
-        document.getElementById('login-overlay').style.display = 'none';
-        applyPermissions();
-        await init();
-    }
-
-    function applyPermissions() {
-        if(userRole === 'ADMIN' || userRole === 'STAFF') {
-            document.querySelectorAll('.staff-only').forEach(el => el.style.display = 'block');
-        }
-        if(userRole === 'ADMIN') {
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
-        }
-    }
-
-    async function init() {
-        updateOnlineStatus();
-        if (initialized) return;
-
-        populateOptions();
-        refreshDashboard();
-        renderCodesList();
-        updateProjectSelects();
-        renderProjectList();
-        loadRecentTable();
-
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('inDate').value = today;
-        document.getElementById('exDate').value = today;
-        document.getElementById('repFrom').value = new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0];
-        document.getElementById('repTo').value = today;
-
-        await fetchRemoteData();
-        await fetchRemoteProjects();
-        
-        initialized = true;
-    }
-
-    async function manualRefresh() { 
-        toggleLoading(true);
-        await fetchRemoteData(); 
-        await fetchRemoteProjects(); 
-        refreshDashboard(); 
-        toggleLoading(false);
-        alert("දත්ත සාර්ථකව යාවත්කාලීන කරන ලදී!"); 
-    }
-function editTransaction(id) {
-    const db = getData();
-    const entry = db.find(r => r.id === id);
-    if(!entry) return;
-
-    // Switch to Data Entry section
-    showSec('entry');
-
-    if(entry.type === 'IN') {
-        document.getElementById('edit-id-in').value = entry.id;
-        document.getElementById('inDate').value = entry.date.split('T')[0];
-        document.getElementById('inRef').value = entry.ref;
-        document.getElementById('inCodeSelect').value = entry.code;
-        document.getElementById('inAmt').value = entry.amt;
-        document.getElementById('inProjSelect').value = entry.proj;
-        document.getElementById('inDesc').value = entry.desc;
-        document.getElementById('btn-save-in').innerText = "යාවත්කාලීන කරන්න (Update)";
-    } else {
-        document.getElementById('edit-id-ex').value = entry.id;
-        document.getElementById('exDate').value = entry.date.split('T')[0];
-        document.getElementById('exVoucher').value = entry.vouch;
-        document.getElementById('exRef').value = entry.ref;
-        document.getElementById('exAmt').value = entry.amt;
-        document.getElementById('exCodeSelect').value = entry.code;
-        document.getElementById('exSourceSelect').value = entry.source;
-        document.getElementById('exProjSelect').value = entry.proj;
-        document.getElementById('exDesc').value = entry.desc;
-        document.getElementById('btn-save-ex').innerText = "යාවත්කාලීන කරන්න (Update)";
-    }
-    
-    // Scroll to top of the form
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-    async function fetchRemoteData() {
-        try {
-            const response = await fetch(SCRIPT_URL + "?action=read&t=" + Date.now());
-            const remoteData = await response.json();
-            
-            // Merge logic: keep local unsynced data, replace others with server data
-            let localDB = JSON.parse(localStorage.getItem('sch_db') || '[]');
-            let unsynced = localDB.filter(item => item.synced === false);
-            
-            const merged = [...remoteData.map(d => ({...d, synced: true})), ...unsynced];
-            localStorage.setItem('sch_db', JSON.stringify(merged));
-            loadRecentTable();
-            return merged;
-    } catch (e) {
-        return JSON.parse(localStorage.getItem('sch_db') || '[]');
-    }
-}
-
-    async function fetchRemoteProjects() {
-        try {
-            const response = await fetch(SCRIPT_URL + "?action=read_projects&t=" + Date.now());
-            const projects = await response.json();
-            localStorage.setItem('sch_projs', JSON.stringify(projects));
-            renderProjectList();
-            updateProjectSelects();
-        } catch (e) {}
-    }
-
-    function toggleLoading(show) {
-        document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
-    }
-
-    function getData() { return JSON.parse(localStorage.getItem('sch_db') || '[]'); }
-    function getProjects() { return JSON.parse(localStorage.getItem('sch_projs') || '[]'); }
-
-    function populateOptions() {
-        const selects = ['inCodeSelect', 'exSourceSelect', 'opCodeSelect'];
-        selects.forEach(sId => {
-            const el = document.getElementById(sId);
-            if(el) {
-                el.innerHTML = '';
-                S_CODES.forEach(c => el.innerHTML += `<option value="${c}">${c} - ${CODE_INFO[c]}</option>`);
-            }
-        });
-        const exCodeSelects = ['exCodeSelect', 'allocCodeSelect'];
-        exCodeSelects.forEach(id => {
-            const el = document.getElementById(id);
-            if(el) {
-                el.innerHTML = '';
-                EX_CODES.forEach(c => el.innerHTML += `<option value="${c}">${c} - ${CODE_INFO[c]}</option>`);
-            }
-        });
-    }
-
-    function renderCodesList() {
-        document.getElementById('codes-s').innerHTML = S_CODES.map(c => `<div class="code-tag"><span class="code-num">${c}</span>${CODE_INFO[c]}</div>`).join('');
-        document.getElementById('codes-ex').innerHTML = EX_CODES.map(c => `<div class="code-tag"><span class="code-num" style="background:var(--danger); color:white;">${c}</span>${CODE_INFO[c]}</div>`).join('');
-    }
-
-async function saveData(type) {
-    const prefix = type === 'IN' ? 'in' : 'ex';
-    const existingId = document.getElementById('edit-id-' + prefix).value;
-    
-    // පවතින ID එකක් ඇත්නම් එය භාවිතා කරයි, නැත්නම් අලුත් එකක් සාදයි
-    const currentId = existingId ? parseInt(existingId) : (Date.now() + Math.floor(Math.random()*1000));
-    
-    const data = { 
-        action: 'save_transaction',
-        id: currentId,
-        date: document.getElementById(prefix + 'Date').value, 
-        ref: document.getElementById(prefix + 'Ref').value, 
-        vouch: type === 'EX' ? document.getElementById('exVoucher').value : '', 
-        code: document.getElementById(prefix + 'CodeSelect').value, 
-        amt: parseFloat(document.getElementById(prefix + 'Amt').value || 0), 
-        desc: document.getElementById(prefix + 'Desc').value, 
-        type: type, 
-        source: type === 'EX' ? document.getElementById('exSourceSelect').value : document.getElementById('inCodeSelect').value,
-        proj: document.getElementById(prefix + 'ProjSelect').value,
-        status: true,
-        isOp: false,
-        synced: false
-    };
-    
-    if(!data.date || data.amt <= 0) return alert("කරුණාකර දිනය සහ මුදල ඇතුළත් කරන්න.");
-
-    let db = getData();
-    
-    // --- මෙන්න මෙතනයි වෙනස සිදුවන්නේ ---
-    const existingIndex = db.findIndex(item => item.id === currentId);
-    if (existingIndex !== -1) {
-        db[existingIndex] = data; // තිබෙන දත්තය යාවත්කාලීන කරයි
-    } else {
-        db.push(data); // අලුත් දත්තයක් ලෙස ඇතුළත් කරයි
-    }
-    // -----------------------------------
-
-    localStorage.setItem('sch_db', JSON.stringify(db));
-    
-    // Queue එකට එක් කිරීම (Sync කිරීම සඳහා)
-    offlineQueue.push(data);
-    localStorage.setItem('sch_offline_queue', JSON.stringify(offlineQueue));
-
-    refreshDashboard();
-    loadRecentTable();
-    resetForms();
-    
-    // Button එකේ නම නැවත සාමාන්‍ය තත්වයට පත් කිරීම
-    document.getElementById('btn-save-' + prefix).innerText = type === 'IN' ? "ලැබීම ගබඩා කරන්න" : "ගෙවීම ගබඩා කරන්න";
-    document.getElementById('edit-id-' + prefix).value = ''; 
-
-    syncOfflineData();
-}
-
-    async function syncOfflineData() {
-        if (!navigator.onLine || offlineQueue.length === 0) return;
-        
-        console.log("සමමුහුර්ත කිරීම ආරම්භ විය...");
-        const itemsToSync = [...offlineQueue];
-        
-        for (let item of itemsToSync) {
-            try {
-                const response = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(item)
-                });
-                
-                if (response.ok) {
-                    // Update LocalDB synced status
-                    let db = getData();
-                    let dbItem = db.find(d => d.id === item.id);
-                    if (dbItem) dbItem.synced = true;
-                    localStorage.setItem('sch_db', JSON.stringify(db));
-                    
-                    // Remove from queue
-                    offlineQueue = offlineQueue.filter(q => q.id !== item.id);
-                    localStorage.setItem('sch_offline_queue', JSON.stringify(offlineQueue));
-                }
-            } catch (e) {
-                console.error("Sync error for ID: " + item.id);
-                break; // Stop loop if server error
-            }
-        }
-        loadRecentTable();
-    }
-
-    async function saveOpening() {
-        const code = document.getElementById('opCodeSelect').value;
-        const amt = parseFloat(document.getElementById('opAmt').value || 0);
-        if(amt <= 0) return alert("මුදල ඇතුළත් කරන්න");
-        
-        const data = { 
-            action: 'save_transaction', 
-            id: Date.now(), 
-            date: "2024-01-01", 
-            ref: 'OPENING', 
-            vouch: '', 
-            code: code, 
-            amt: amt, 
-            desc: 'ආරම්භක ශේෂය', 
-            type: 'IN', 
-            source: code, 
-            isOp: true, 
-            status: true,
-            synced: false
-        };
-        
-        let db = getData();
-        db.push(data);
-        localStorage.setItem('sch_db', JSON.stringify(db));
-        offlineQueue.push(data);
-        localStorage.setItem('sch_offline_queue', JSON.stringify(offlineQueue));
-        
-        alert("ආරම්භක ශේෂය සුරැකිණි!");
-        refreshDashboard();
-        syncOfflineData();
-    }
-
-    async function saveAllocation() {
-        const code = document.getElementById('allocCodeSelect').value;
-        const amt = parseFloat(document.getElementById('allocAmt').value || 0);
-        toggleLoading(true);
-        try { 
-            await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({action: 'save_allocation', allocCode: code, allocAmt: amt}) }); 
-            allocations[code] = amt; 
-            localStorage.setItem('sch_allocations', JSON.stringify(allocations)); 
-            alert("ප්‍රතිපාදන ගබඩා කරන ලදී!"); 
-        } catch (e) { alert("දෝෂයකි!"); }
-        toggleLoading(false);
-    }
-
-    function openReport(type) {
-        currentReport = type;
-        showSec('report');
-        document.getElementById('filter-box').style.display = (type === 'IN' || type === 'EX') ? 'block' : 'none';
-        document.getElementById('bank-bal-box').style.display = (type === 'BANK') ? 'block' : 'none';
-        if(type === 'IN' || type === 'EX') {
-            const list = type === 'IN' ? S_CODES : EX_CODES;
-            document.getElementById('repFilter').innerHTML = '<option value="ALL">සියලුම කේතයන්</option>' + list.map(c => `<option value="${c}">${c} - ${CODE_INFO[c]}</option>`).join('');
-        }
-        generateReport();
-    }
-
-    function generateReport() {
-        const db = getData();
-        const from = document.getElementById('repFrom').value;
-        const to = document.getElementById('repTo').value;
-        const filter = document.getElementById('repFilter').value;
-        let html = '';
-
-            if(currentReport === 'CASHBOOK') {
-    document.getElementById('report-header-title').innerText = "මුදල් පොත (Cash Book)";
-    let bal = db.filter(r => r.isOp).reduce((a,c) => a+c.amt, 0);
-    if(from) { db.filter(r => !r.isOp && r.date < from).forEach(r => bal += (r.type==='IN'?r.amt:-r.amt)); }
-    
-    html = `<table><thead><tr>
-                <th>දිනය</th>
-                <th>විස්තරය</th>
-                <th>චෙක්පත් අංකය</th>
-                <th>වවුචර්/ලදුපත් අංකය</th>
-                <th>ලැබීම් (+)</th>
-                <th>ගෙවීම් (-)</th>
-                <th>ශේෂය</th>
-            </tr></thead><tbody><tr style="background:#f0f0f0; font-weight:bold;"><td colspan="6" style="text-align:right">ආරම්භක ශේෂය:</td><td style="text-align:right">${bal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
-    
-    db.filter(r => !r.isOp && (!from || r.date >= from) && (!to || r.date <= to)).sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(r => {
-        bal += (r.type === 'IN' ? r.amt : -r.amt);
-        
-        html += `<tr>
-                    <td>${r.date.split('T')[0]}</td>
-                    <td>${r.desc}</td>
-                    <td>${r.ref || '-'}</td>
-                    <td>${r.vouch || (r.type === 'IN' ? r.ref : '-')}</td>
-                    <td style="text-align:right">${(r.type==='IN' && r.amt !== 0) ? r.amt.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td>
-		    <td style="text-align:right">${(r.type==='EX' && r.amt !== 0) ? r.amt.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td>
-		    <td style="text-align:right; font-weight:bold">${bal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                </tr>`;
-    });
-    html += '</tbody></table>';
-} else if(currentReport === 'BANK') {
-    document.getElementById('report-header-title').innerText = "බැංකු සැසඳුම් ප්‍රකාශය";
-    let bankStmtBal = parseFloat(document.getElementById('bankStmtInput').value || 0);
-    let filteredDb = db.filter(r => (!from || r.date >= from) && (!to || r.date <= to));
-
-    // 1. ඉදිරිපත් නොකළ චෙක්පත් (Unpresented Cheques) - Pending ගෙවීම්
-    let unpresentedList = filteredDb.filter(r => r.type === 'EX' && (clearedStatus[r.id] || 'Pending') === 'Pending');
-    let totalUnpresented = unpresentedList.reduce((a, b) => a + b.amt, 0);
-
-    // 2. තැන්පත් නොකළ ලැබීම් (Uncredited Deposits) - Pending ලැබීම්
-    let uncreditedList = filteredDb.filter(r => r.type === 'IN' && (clearedStatus[r.id] || 'Pending') === 'Pending');
-    let totalUncredited = uncreditedList.reduce((a, b) => a + b.amt, 0);
-
-    let adjustedBalance = bankStmtBal + totalUncredited - totalUnpresented;
-
-    // බැංකු සැසඳුම් ප්‍රකාශනයේ ආකෘතිය (Print-friendly format)
-    html = `
-        <div style="background: #ffffff; padding: 20px; border: 2px solid #333; border-radius: 5px; color: #000;">
-            <h3 style="text-align:center; text-decoration: underline;">බැංකු සැසඳුම් ප්‍රකාශය - ${to || 'අද දිනට'}</h3>
-            <table style="width:100%; border-collapse: collapse; margin-top: 20px;">
-                <tr><td style="padding: 8px;"><b>බැංකු ප්‍රකාශය අනුව ශේෂය</b></td><td style="text-align:right; padding: 8px;"><b>${bankStmtBal.toLocaleString(undefined, {minimumFractionDigits: 2})}</b></td></tr>
-                
-                <tr><td colspan="2" style="padding: 8px; color: #1b5e20;"><b>එකතු කිරීම:</b> තැන්පත් කළ නමුත් නිශ්කාෂණය නොවූ චෙක්පත් (Uncredited)</td></tr>`;
-    
-    uncreditedList.forEach(r => {
-        html += `<tr><td style="padding-left:40px; font-size: 0.9em;">${r.date.split('T')[0]} - ${r.desc}</td><td style="text-align:right; padding-right: 20px;">${r.amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
-    });
-
-    html += `<tr><td style="padding-left:80px;"><b>මුළු නිශ්කාෂණය නොවූ චෙක්පත් එකතුව</b></td><td style="text-align:right; border-top:1px solid #000; padding: 8px;">${totalUncredited.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>
-                <tr style="background:#f0f0f0;"><td style="padding: 8px;"><b>උප එකතුව</b></td><td style="text-align:right; padding: 8px;"><b>${(bankStmtBal + totalUncredited).toLocaleString(undefined, {minimumFractionDigits: 2})}</b></td></tr>
-                
-                <tr><td colspan="2" style="padding: 8px; color: #b71c1c;"><b>අඩු කිරීම:</b> නිකුත් කළ නමුත් බැංකුවට ඉදිරිපත් නොවූ චෙක්පත් (Unpresented)</td></tr>`;
-
-    unpresentedList.forEach(r => {
-        html += `<tr><td style="padding-left:40px; font-size: 0.9em;">${r.ref || '-'} (${r.date.split('T')[0]}) - ${r.desc}</td><td style="text-align:right; padding-right: 20px;">(${r.amt.toLocaleString(undefined, {minimumFractionDigits: 2})})</td></tr>`;
-    });
-
-    html += `<tr><td style="padding-left:80px;"><b>මුළු ඉදිරිපත් නොකළ චෙක්පත් එකතුව</b></td><td style="text-align:right; border-top:1px solid #000; padding: 8px;">(${totalUnpresented.toLocaleString(undefined, {minimumFractionDigits: 2})})</td></tr>
-                <tr style="border-bottom: 4px double #000; background: #fff8e1;">
-                    <td style="padding: 10px;"><b style="font-size:1.1em;">මුදල් පොතේ ශේෂය (Cash Book Balance)</b></td>
-                    <td style="text-align:right; padding: 10px;"><b style="font-size:1.1em;">${adjustedBalance.toLocaleString(undefined, {minimumFractionDigits: 2})}</b></td>
-                </tr>
-            </table>
-        </div>
-
-        <div class="no-print" style="margin-top:40px;">
-            <hr>
-            <h4>චෙක්පත් සහ ලැබීම් තත්ත්වය යාවත්කාලීන කරන්න (Pending/Cleared)</h4>
-            <p style="font-size: 0.9em; color: #666;">*මෙහි Pending ලෙස ඇති දත්ත පමණක් ඉහත සැසඳුම් ප්‍රකාශයට ඇතුළත් වේ.</p>
-            <table class="q-table">
-                <thead><tr><th>දිනය</th><th>විස්තරය</th><th>අංකය</th><th>මුදල</th><th>වර්ගය</th><th>තත්ත්වය</th></tr></thead><tbody>`;
-
-    filteredDb.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(r => {
-        let status = clearedStatus[r.id] || 'Pending';
-        html += `<tr>
-            <td>${r.date.split('T')[0]}</td>
-            <td>${r.desc}</td>
-            <td>${r.ref || (r.vouch || '-')}</td>
-            <td class="val-col">${r.amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-            <td>${r.type === 'IN' ? 'ලැබීම' : 'ගෙවීම'}</td>
-            <td>
-                <select class="status-select ${status === 'Cleared' ? 'status-cleared' : 'status-pending'}" onchange="updateClearedStatus('${r.id}', this.value)">
-                    <option value="Pending" ${status === 'Pending' ? 'selected' : ''}>Pending</option>
-                    <option value="Cleared" ${status === 'Cleared' ? 'selected' : ''}>Cleared</option>
-                </select>
-            </td>
-        </tr>`;
-    });
-    html += `</tbody></table></div>`;
-        } else if(currentReport === 'VARIANCE') {
-            document.getElementById('report-header-title').innerText = "ප්‍රතිපාදන සහ වියදම් සැසඳුම";
-            html = `<table><tr><th>වියදම් කේතය</th><th>ප්‍රතිපාදන</th><th> වියදම</th><th>ශේෂය</th><th>භාවිතය %</th></tr>`;
-            EX_CODES.forEach(c => {
-                const actual = db.filter(r => r.type === 'EX' && r.code === c && (!from || r.date >= from) && (!to || r.date <= to)).reduce((a,b) => a+b.amt, 0);
-                const budget = allocations[c] || 0;
-                const balance = budget - actual;
-                const perc = budget > 0 ? ((actual / budget) * 100).toFixed(1) : 0;
-              html += `<tr><td><b>${c}</b> - ${CODE_INFO[c]}</td><td class="val-col">${budget > 0 ? budget.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td><td class="val-col">${actual > 0 ? actual.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td><td class="val-col">${balance !== 0 ? balance.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td><td style="text-align:center">${perc}%</td></tr>`;
-            });
-            html += '</table>';
-       
-} else if(currentReport === 'QUARTER') {
-    document.getElementById('report-header-title').innerText = "සිව්මස් ගිණුම් වාර්තාව";
-    
-    const fromDate = new Date(document.getElementById('repFrom').value);
-    const toDate = new Date(document.getElementById('repTo').value);
-    const yearStart = new Date(fromDate.getFullYear(), 0, 1); 
-
-    const isFirstQuarter = fromDate.getMonth() === 0;
-
-    let opBalTotal = db.filter(r => r.isOp).reduce((a, b) => a + b.amt, 0);
-    let tinTotal = opBalTotal, texTotal = 0;
-
-    html = `<table class="q-table">
-        <thead>
-            <tr>
-                <th colspan="5" class="q-header">ලැබීම් (හර)</th>
-                <th colspan="5" class="q-header">ගෙවීම් (බැර)</th>
-            </tr>
-            <tr>
-                <th>කේතය</th>
-                <th>වාර්ෂික ඇස්තමේන්තුව</th>
-                <th>පෙර සිව්මස දක්වා</th>
-                <th>මෙම සිව්මස</th>
-                <th>මුළු එකතුව</th>
-                <th>කේතය</th>
-                <th>වාර්ෂික ප්‍රතිපාදන</th>
-                <th>පෙර සිව්මස දක්වා</th>
-                <th>මෙම සිව්මස</th>
-                <th>මුළු එකතුව</th>
-            </tr>
-        </thead>
-        <tbody>`;
-
-  const maxLength = Math.max(S_CODES.length, EX_CODES.length);
-
-for (let i = 0; i < maxLength; i++) {
-    let s = S_CODES[i] || '';
-    let ex = EX_CODES[i] || '';
-    let sOp = s ? db.filter(r => r.isOp && r.source === s).reduce((a, b) => a + b.amt, 0) : 0;
-    let sPrev = s ? db.filter(r => r.type === 'IN' && !r.isOp && r.source === s && new Date(r.date) < fromDate).reduce((a, b) => a + b.amt, 0) : 0;
-    let sCurr = s ? db.filter(r => r.type === 'IN' && r.source === s && new Date(r.date) >= fromDate && new Date(r.date) <= toDate).reduce((a, b) => a + b.amt, 0) : 0;
-    let sTotalPrev = sOp + sPrev;
-    let exPrev = ex ? db.filter(r => r.type === 'EX' && r.code === ex && new Date(r.date) < fromDate && new Date(r.date) >= yearStart).reduce((a, b) => a + b.amt, 0) : 0;
-    let exCurr = ex ? db.filter(r => r.type === 'EX' && r.code === ex && new Date(r.date) >= fromDate && new Date(r.date) <= toDate).reduce((a, b) => a + b.amt, 0) : 0;
-    tinTotal += (sPrev + sCurr); 
-    texTotal += (exPrev + exCurr);
-   html += `<tr>
-    <td>${s}</td>
-    <td class="val-col">-</td>
-    <td class="val-col">${sTotalPrev > 0 ? sTotalPrev.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td>
-    <td class="val-col">${sCurr > 0 ? sCurr.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td>
-    <td class="val-col" style="background:#f9f9f9">${(sTotalPrev + sCurr) > 0 ? (sTotalPrev + sCurr).toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td>
-    
-    <td>${ex}</td>
-    <td class="val-col">${(allocations[ex] || 0) > 0 ? allocations[ex].toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td>
-    <td class="val-col">${exPrev > 0 ? exPrev.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td>
-    <td class="val-col">${exCurr > 0 ? exCurr.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td>
-    <td class="val-col" style="background:#f9f9f9">${(exPrev + exCurr) > 0 ? (exPrev + exCurr).toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td>
-</tr>`;
-} 
-
-    html += `<tr class="q-total-row">
-        <td colspan="4">මුළු ලැබීම් එකතුව (ආරම්භක ශේෂය සහිතව)</td>
-        <td class="val-col">${tinTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-        <td colspan="4">මුළු ගෙවීම් එකතුව</td>
-        <td class="val-col">${texTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-    </tr>
-    <tr class="q-total-row">
-        <td colspan="9" style="text-align:right">අතැති ශේෂය (Balance)</td>
-        <td class="val-col" style="background:var(--gold)">${(tinTotal - texTotal).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-    </tr>
-    </tbody></table>`;
-        // ... පවතින කේතය ...
-} else {
-            document.getElementById('report-header-title').innerText = currentReport === 'IN' ? "ලැබීම් විශ්ලේෂණ වාර්තාව" : "ගෙවීම් විශ්ලේෂණ වාර්තාව";
-            const codes = filter === 'ALL' ? (currentReport === 'IN' ? S_CODES : EX_CODES) : [filter];
-            
-            if (currentReport === 'IN') {
-                html = '<table><tr><th>කේතය</th><th>විස්තරය</th><th style="text-align:right;">මුළු ලැබීම් (රු.)</th><th style="text-align:right;">වැය කළ වියදම (රු.)</th><th style="text-align:right;">ශේෂය (රු.)</th></tr>';
-            } else {
-                html = '<table><tr><th>කේතය</th><th>විස්තරය</th><th style="text-align:right;">මුදල (රු.)</th></tr>';
-            }
-
-            let totalIn = 0, totalEx = 0;
-
-            codes.forEach(c => { 
-                const incomeAmt = db.filter(r => {
-                    const isCorrectType = r.type === 'IN';
-                    const isCorrectCode = (r.code === c || r.source === c);
-                    const isWithinDate = (!from || r.date >= from) && (!to || r.date <= to);
-                    return isCorrectType && isCorrectCode && (isWithinDate || r.isOp === true);
-                }).reduce((a, b) => a + b.amt, 0);
-
-                if (currentReport === 'IN') {
-                    const expenseAmt = db.filter(r => r.type === 'EX' && r.source === c && (!from || r.date >= from) && (!to || r.date <= to)).reduce((a, b) => a + b.amt, 0);
-                    const balance = incomeAmt - expenseAmt;
-                    html += `<tr><td><b>${c}</b></td><td>${CODE_INFO[c]}</td><td class="val-col">${incomeAmt > 0 ? incomeAmt.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td><td class="val-col" style="color:red;">${expenseAmt > 0 ? expenseAmt.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td><td class="val-col" style="font-weight:bold;">${balance.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
-                    totalIn += incomeAmt;
-                    totalEx += expenseAmt;
-                } else {
-                    html += `<tr><td><b>${c}</b></td><td>${CODE_INFO[c]}</td><td class="val-col">${incomeAmt > 0 ? incomeAmt.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td></tr>`;
-                    totalIn += incomeAmt;
-                }
-            });
-
-            if (currentReport === 'IN') {
-                html += `<tr style="background:#f1f2f6; font-weight:bold;"><td colspan="2">මුළු එකතුව</td><td class="val-col">${totalIn.toLocaleString(undefined, {minimumFractionDigits: 2})}</td><td class="val-col" style="color:red;">${totalEx.toLocaleString(undefined, {minimumFractionDigits: 2})}</td><td class="val-col">${(totalIn - totalEx).toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr></table>`;
-            } else {
-                html += `<tr style="background:#f1f2f6; font-weight:bold;"><td colspan="2">මුළු එකතුව</td><td class="val-col">${totalIn.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr></table>`;
-            }
-        } // else අවසානය
-
-        html += `<div class="print-signatures"><div style="width: 33%;"><p>...</p><p><b>පරීක්ෂා කළේ</b></p></div><div style="width: 33%;"><p>...</p><p><b>භාණ්ඩාගාරික</b></p></div><div style="width: 33%;"><p>...</p><p><b>විදුහල්පති</b></p></div></div>`;
-        document.getElementById('report-content').innerHTML = html;
-        document.getElementById('report-date-range').innerText = `කාලසීමාව: ${(from || "ආරම්භයේ")} සිට ${(to || "අද")} දක්වා`;
-    } // generateReport function අවසානය
-
-    function updateClearedStatus(id, val) {
-        clearedStatus[id] = val;
-        localStorage.setItem('sch_cleared', JSON.stringify(clearedStatus));
-        generateReport();
-    }
-    async function refreshDashboard() {
-        const db = await getData();
-        const tin = db.filter(r => r.type === 'IN').reduce((a,b) => a + b.amt, 0);
-        const tex = db.filter(r => r.type === 'EX').reduce((a,b) => a + b.amt, 0);
-        document.getElementById('dash-in').innerText = tin.toLocaleString(undefined, {minimumFractionDigits:2});
-        document.getElementById('dash-ex').innerText = tex.toLocaleString(undefined, {minimumFractionDigits:2});
-        document.getElementById('dash-bal').innerText = (tin-tex).toLocaleString(undefined, {minimumFractionDigits:2});
-        let fundHtml = '';
-        S_CODES.forEach((s, i) => {
-            const bal = db.filter(r => r.source === s).reduce((a,b) => a + (b.type==='IN'?b.amt:-b.amt), 0);
-            fundHtml += `<div class="fund-box" style="background:${COLORS[i%COLORS.length]}"><div>${s}</div><div style="font-size:18px;">රු. ${bal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div><small>${CODE_INFO[s]}</small></div>`;
-        });
-        document.getElementById('dash-funds').innerHTML = fundHtml;
-    }
-
-   async function loadRecentTable() {
-    const db = await getData();
-    let html = '<table><tr><th>දිනය</th><th>විස්තරය</th><th>වවුචර්</th><th>මුදල</th><th>ක්‍රියා</th></tr>';
-    
-    // Sort and show last 5 transactions
-    db.sort((a,b) => b.id - a.id).slice(0,5).forEach(r => {
-        let actions = [];
-        
-        // Edit permission: Admin and Staff
-        if(userRole === 'ADMIN' || userRole === 'STAFF') {
-            actions.push(`<button onclick="editTransaction(${r.id})" style="background:var(--deep-blue); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Edit</button>`);
-        }
-        
-        // Delete permission: Admin only
-        if(userRole === 'ADMIN') {
-            actions.push(`<button onclick="deleteData(${r.id})" style="background:var(--danger); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Delete</button>`);
-        }
-        
-        // Guest sees '-' if no permissions
-        const actionHtml = actions.length > 0 ? actions.join(' ') : '-';
-
-        html += `<tr>
-            <td>${r.date.split('T')[0]}</td>
-            <td>${r.desc}</td>
-            <td>${r.vouch || r.ref}</td>
-            <td style="color:${r.type==='IN'?'green':'red'}">${r.amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-            <td>${actionHtml}</td>
-        </tr>`;
-    });
-    document.getElementById('recent-transactions-table').innerHTML = html + '</table>';
-}
-
-    async function saveProject() {
-        const name = document.getElementById('projName').value, est = document.getElementById('projEst').value;
-        if(!name || !est) return alert("හිස්තැන් පුරවන්න");
-        toggleLoading(true);
-        try { 
-            await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({action:'saveProject', projectName:name, est:parseFloat(est)}) }); 
-            alert("ව්‍යාපෘතිය සුරැකිණි!"); 
-            await fetchRemoteProjects(); 
-        } catch(e) {}
-        toggleLoading(false);
-    }
-
-    function renderProjectList() {
-        const projs = getProjects(), db = getData();
-        let html = '<table><tr><th>ව්‍යාපෘතිය</th><th>ඇස්තමේන්තුව</th><th>ආදායම</th><th>වියදම</th><th>ශේෂය</th></tr>';
-        projs.forEach(p => {
-            const pin = db.filter(r => r.proj === p.projectName && r.type === 'IN').reduce((a,b)=>a+b.amt,0);
-            const pex = db.filter(r => r.proj === p.projectName && r.type === 'EX').reduce((a,b)=>a+b.amt,0);
-			const projectBalance = (p.est + pin) - pex;
-            html += `<tr><td>${p.projectName}</td><td>${p.est.toFixed(2)}</td><td>${pin.toFixed(2)}</td><td>${pex.toFixed(2)}</td><td><b>${(p.est + pin - pex).toFixed(2)}</b></td></tr>`;
-        });
-        document.getElementById('project-list-table').innerHTML = html + '</table>';
-    }
-
-    function updateProjectSelects() {
-        const projs = getProjects();
-        ['inProjSelect', 'exProjSelect'].forEach(id => {
-            const el = document.getElementById(id);
-            el.innerHTML = '<option value="">නොමැත</option>';
-            projs.forEach(p => el.innerHTML += `<option value="${p.projectName}">${p.projectName}</option>`);
-        });
-    }
-
-    async function deleteData(id) {
-    if(!confirm("මකන්නද?")) return;
-    
-    let localDB = JSON.parse(localStorage.getItem('sch_db') || '[]');
-    localDB = localDB.filter(item => item.id !== id);
-    localStorage.setItem('sch_db', JSON.stringify(localDB));
-    
-    loadRecentTable();
-    refreshDashboard();
-
-    try { 
-        fetch(SCRIPT_URL + "?action=delete&id="+id); 
-    } catch(e) { 
-        console.error("Server delete failed");
-    }
-}
-
-    function showSec(id) {
-        document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
-        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-        document.getElementById('sec-' + id).style.display = 'block';
-        document.getElementById('nav-' + id)?.classList.add('active');
-        if(id === 'entry') loadRecentTable();
-        if(id === 'proj') renderProjectList();
-        if(id === 'dash') refreshDashboard();
-    }
-
-    async function manualRefresh() { await fetchRemoteData(); await fetchRemoteProjects(); refreshDashboard(); alert("අලුත් කරන ලදී!"); }
-
-    function resetForms() {
-	document.getElementById('edit-id-in').value = '';
-   	 document.getElementById('edit-id-ex').value = '';
-        document.querySelectorAll('input:not([type="hidden"]), textarea').forEach(i => i.value = '');
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('inDate').value = today; document.getElementById('exDate').value = today;
-    }
-
-    function downloadBackupJSON() {
-        const db = getData();
-        const blob = new Blob([JSON.stringify(db, null, 2)], {type: 'application/json'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'backup.json'; a.click();
-    }
-
-    function downloadBackupCSV() {
-        const db = getData();
-        let csv = 'Date,Desc,Amt,Type,Code,Proj\n' + db.map(r => `${r.date},${r.desc},${r.amt},${r.type},${r.code},${r.proj}`).join('\n');
-        const blob = new Blob([csv], {type: 'text/csv'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'data.csv'; a.click();
-    }
-</script>
+<script src="app.js"></script>
 </body>
 </html>
-
