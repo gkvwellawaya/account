@@ -607,7 +607,7 @@ function viewCodeDetails(code, type) {
     
     // ගෙවීම් ගනුදෙනු
     const expenseTransactions = db.filter(r => 
-        r.code === code && 
+        r.source === code && 
         r.type === 'EX' && 
         (!from || r.date >= from) && 
         (!to || r.date <= to)
