@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxpYaH1wS9ejKgTbnilksCOLsIIzL8R1ICGad1cSdg5KmC-ODCJWiQQiMWeZdgcG885Jw/exec";
+ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzaVBE_NqOMUS8wQtDWWKw4gsjx-N2KHw4cyzEUDXYctGYo0rx8mq9ZVo2Nyjrt0u27pA/exec";
 
     const S_CODES = ["S1","S2","S3","S4","S5","S6","S7","S8","S9","S10"];
     const EX_CODES = ["REx1","REx2","REx3","REx4","REx5","REx6","REx7","CEx1","CEx2","CEx3","CEx4","CEx5","CEx6"];
@@ -11,18 +11,27 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxpYaH1wS9ejKgTbnilk
 
     let currentReport = '';
     let userRole = '';
-    let allocations = JSON.parse(localStorage.getItem('sch_allocations') || '{}');
-    let clearedStatus = JSON.parse(localStorage.getItem('sch_cleared') || '{}');
-    let offlineQueue = JSON.parse(localStorage.getItem('sch_offline_queue') || '[]');
+    let allocations = JSON.parse(sessionStorage.getItem('sch_allocations') || '{}');
+    let clearedStatus = JSON.parse(sessionStorage.getItem('sch_cleared') || '{}');
     let initialized = false;
+    let isLoading = false;
 
- 
+    $(document).ready(function() {
+        updateOnlineStatus();
+        populateOptions();
+        initializeSelect2();
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('inDate').value = today;
+        document.getElementById('exDate').value = today;
+        document.getElementById('repFrom').value = new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0];
+        document.getElementById('repTo').value = today;
+    });
+
     function updateOnlineStatus() {
         const statusDiv = document.getElementById('connection-status');
         if (navigator.onLine) {
             statusDiv.innerHTML = "🟢 ONLINE";
             statusDiv.className = "status-glow-online";
-            syncOfflineData();
         } else {
             statusDiv.innerHTML = "🔴 OFFLINE";
             statusDiv.className = "status-glow-offline";
@@ -84,14 +93,54 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxpYaH1wS9ejKgTbnilk
 
     async function checkLogin() {
         const pass = document.getElementById('passInput').value;
-        if(pass === "MyApp") userRole = 'ADMIN';
-        else if(pass === "Staff123") userRole = 'STAFF';
-        else if(pass === "Guest") userRole = 'GUEST';
-        else { alert("මුරපදය වැරදියි!"); return; }
+        if(pass === "MyApp") {
+            userRole = 'ADMIN';
+        } else if(pass === "Staff123") {
+            userRole = 'STAFF';
+        } else if(pass === "Guest") {
+            userRole = 'GUEST';
+        } else { 
+            alert("මුරපදය වැරදියි!"); 
+            return; 
+        }
+        showToast("🔄 පද්ධතියට ඇතුළු වෙමින්...");
+        document.getElementById('login-overlay').innerHTML = `
+            <div class="card" style="text-align:center; width: 380px; padding: 50px; background: white;">
+                <h2 style="color:var(--primary); margin-bottom: 10px;">මූල්‍ය කළමනාකරණ පද්ධතිය</h2>
+                <p style="color: #666; margin-bottom: 20px;">මො/ගම්පංගුව කනිෂ්ඨ විද්‍යාලය</p>
+                
+                <div style="margin: 30px 0;">
+                    <i class="fas fa-spinner fa-spin fa-3x" style="color: var(--primary);"></i>
+                </div>
+                
+                <h3 style="color: var(--primary);">දත්ත යාවත්කාලීන කරමින්...</h3>
+                <p style="color: #666; font-size: 14px;">කරුණාකර රැඳී සිටින්න</p>
+            </div>
+        `;
         
+        try {
+            await fetchRemoteData();
+            await fetchRemoteProjects();
+            refreshDashboard();
+            loadRecentTable();
+            renderCodesList();
+            updateProjectSelects();
+            renderProjectList();
+            updateOnlineStatus();
+            applyPermissions();
+            showToast("✅ පද්ධතියට සාර්ථකව ඇතුළු විය!");
+            
+        } catch (error) {
+            console.error("දත්ත යාවත්කාලීන දෝෂය:", error);
+            showToast("⚠️ දත්ත යාවත්කාලීන දෝෂයක්. නැවත උත්සාහ කරන්න.");
+        }
         document.getElementById('login-overlay').style.display = 'none';
-        applyPermissions();
-        await init();
+        showSec('dash');
+        setTimeout(() => {
+            initializeSelect2();
+        }, 100);
+        
+        initialized = true;
     }
 
     function applyPermissions() {
@@ -111,90 +160,83 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxpYaH1wS9ejKgTbnilk
             document.getElementById('pdf-btn').style.display = 'flex';
         }
     }
-
-    async function init() {
-        updateOnlineStatus();
-        if (initialized) return;
-
-        populateOptions();
-        refreshDashboard();
-        renderCodesList();
-        updateProjectSelects();
-        renderProjectList();
-        loadRecentTable();
-
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('inDate').value = today;
-        document.getElementById('exDate').value = today;
-        document.getElementById('repFrom').value = new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0];
-        document.getElementById('repTo').value = today;
-
-        await fetchRemoteData();
-        await fetchRemoteProjects();
-        
-        initialized = true;
+    function initializeSelect2() {
+        $('#inCodeSelect, #exCodeSelect, #exSourceSelect, #opCodeSelect, #allocCodeSelect').select2({
+            placeholder: "තෝරන්න...",
+            allowClear: true,
+            width: '100%'
+        }).on('select2:open', function() {
+            $(this).data('select2').$dropdown.find(':input.select2-search__field').focus();
+        });
     }
 
     async function manualRefresh() { 
+        if (isLoading) return;
+        
         toggleLoading(true);
-        await fetchRemoteData(); 
-        await fetchRemoteProjects(); 
-        refreshDashboard(); 
-        toggleLoading(false);
-        showToast("✅ දත්ත සාර්ථකව යාවත්කාලීන කරන ලදී!"); 
+        isLoading = true;
+        
+        try {
+            await fetchRemoteData(); 
+            await fetchRemoteProjects(); 
+            refreshDashboard();
+            loadRecentTable();
+            showToast("✅ දත්ත අලුත් කරන ලදී!"); 
+        } catch (error) {
+            console.error("Manual refresh error:", error);
+            showToast("⚠️ දත්ත අලුත් කිරීමේ දෝෂයක්");
+        } finally {
+            toggleLoading(false);
+            isLoading = false;
+        }
     }
 
     function editTransaction(id) {
-    const db = getData();
-    const entry = db.find(r => r.id === id);
-    if(!entry) return;
+        const db = getData();
+        const entry = db.find(r => r.id === id);
+        if(!entry) return;
 
-    showSec('entry');
+        showSec('entry');
 
-    if(entry.type === 'IN') {
-        document.getElementById('edit-id-in').value = entry.id;
-        document.getElementById('inDate').value = entry.date.split('T')[0];
-        document.getElementById('inRef').value = entry.ref;
-        document.getElementById('inCodeSelect').value = entry.code;
-        document.getElementById('inAmt').value = entry.amt.toFixed(2);
-        document.getElementById('inProjSelect').value = entry.proj;
-        document.getElementById('inDesc').value = entry.desc;
-        document.getElementById('btn-save-in').innerText = "යාවත්කාලීන කරන්න (Update)";
+        if(entry.type === 'IN') {
+            document.getElementById('edit-id-in').value = entry.id;
+            document.getElementById('inDate').value = entry.date.split('T')[0];
+            document.getElementById('inRef').value = entry.ref;
+            $('#inCodeSelect').val(entry.code).trigger('change');
+            document.getElementById('inAmt').value = entry.amt.toFixed(2);
+            $('#inProjSelect').val(entry.proj).trigger('change');
+            document.getElementById('inDesc').value = entry.desc;
+            document.getElementById('btn-save-in').innerText = "යාවත්කාලීන කරන්න (Update)";
+            document.getElementById('edit-id-ex').value = '';
+        } else {
+            document.getElementById('edit-id-ex').value = entry.id;
+            document.getElementById('exDate').value = entry.date.split('T')[0];
+            document.getElementById('exVoucher').value = entry.vouch;
+            document.getElementById('exRef').value = entry.ref;
+            document.getElementById('exAmt').value = entry.amt.toFixed(2);
+            $('#exCodeSelect').val(entry.code).trigger('change');
+            $('#exSourceSelect').val(entry.source).trigger('change');
+            $('#exProjSelect').val(entry.proj).trigger('change');
+            document.getElementById('exDesc').value = entry.desc;
+            document.getElementById('btn-save-ex').innerText = "යාවත්කාලීන කරන්න (Update)";
+            document.getElementById('edit-id-in').value = '';
+        }
         
-        // EX පෝරමයේ ID හිස් කරන්න
-        document.getElementById('edit-id-ex').value = '';
-    } else {
-        document.getElementById('edit-id-ex').value = entry.id;
-        document.getElementById('exDate').value = entry.date.split('T')[0];
-        document.getElementById('exVoucher').value = entry.vouch;
-        document.getElementById('exRef').value = entry.ref;
-        document.getElementById('exAmt').value = entry.amt.toFixed(2);
-        document.getElementById('exCodeSelect').value = entry.code;
-        document.getElementById('exSourceSelect').value = entry.source;
-        document.getElementById('exProjSelect').value = entry.proj;
-        document.getElementById('exDesc').value = entry.desc;
-        document.getElementById('btn-save-ex').innerText = "යාවත්කාලීන කරන්න (Update)";
-        
-        // IN පෝරමයේ ID හිස් කරන්න
-        document.getElementById('edit-id-in').value = '';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
+
     async function fetchRemoteData() {
         try {
             const response = await fetch(SCRIPT_URL + "?action=read&t=" + Date.now());
             const remoteData = await response.json();
             
-            let localDB = JSON.parse(localStorage.getItem('sch_db') || '[]');
-            let unsynced = localDB.filter(item => item.synced === false);
-            
-            const merged = [...remoteData.map(d => ({...d, synced: true})), ...unsynced];
-            localStorage.setItem('sch_db', JSON.stringify(merged));
-            loadRecentTable();
-            return merged;
+            // Store fetched data in localStorage as cache
+            sessionStorage.setItem('sch_db', JSON.stringify(remoteData));
+            return remoteData;
         } catch (e) {
-            return JSON.parse(localStorage.getItem('sch_db') || '[]');
+            console.error("Remote data fetch error:", e);
+            // If remote fetch fails, use cached data from localStorage
+            return JSON.parse(sessionStorage.getItem('sch_db') || '[]');
         }
     }
 
@@ -202,48 +244,66 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxpYaH1wS9ejKgTbnilk
         try {
             const response = await fetch(SCRIPT_URL + "?action=read_projects&t=" + Date.now());
             const projects = await response.json();
-            localStorage.setItem('sch_projs', JSON.stringify(projects));
-            renderProjectList();
-            updateProjectSelects();
-        } catch (e) {}
+            sessionStorage.setItem('sch_projs', JSON.stringify(projects));
+        } catch (e) {
+            console.error("Remote projects fetch error:", e);
+            // Use cached projects if available
+        }
     }
 
     function toggleLoading(show) {
-        document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
+        if (show) {
+            document.getElementById('loading-overlay').style.display = 'flex';
+        } else {
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
     }
 
-    function getData() { return JSON.parse(localStorage.getItem('sch_db') || '[]'); }
-    function getProjects() { return JSON.parse(localStorage.getItem('sch_projs') || '[]'); }
-
+    function getData() { 
+        // Always get from localStorage (which is now our cache of Google Sheets data)
+        return JSON.parse(sessionStorage.getItem('sch_db') || '[]'); 
+    }
+    
+    function getProjects() { 
+        return JSON.parse(sessionStorage.getItem('sch_projs') || '[]'); 
+    }
     function populateOptions() {
-        const selects = ['inCodeSelect', 'exSourceSelect', 'opCodeSelect'];
-        selects.forEach(sId => {
+        const sCodeOptions = S_CODES.map(c => `<option value="${c}">${c} - ${CODE_INFO[c]}</option>`).join('');
+        const exCodeOptions = EX_CODES.map(c => `<option value="${c}">${c} - ${CODE_INFO[c]}</option>`).join('');
+        ['inCodeSelect', 'exSourceSelect', 'opCodeSelect'].forEach(sId => {
             const el = document.getElementById(sId);
             if(el) {
-                el.innerHTML = '';
-                S_CODES.forEach(c => el.innerHTML += `<option value="${c}">${c} - ${CODE_INFO[c]}</option>`);
+                el.innerHTML = `<option value=""></option>` + sCodeOptions;
             }
         });
-        const exCodeSelects = ['exCodeSelect', 'allocCodeSelect'];
-        exCodeSelects.forEach(id => {
+        ['exCodeSelect', 'allocCodeSelect'].forEach(id => {
             const el = document.getElementById(id);
             if(el) {
-                el.innerHTML = '';
-                EX_CODES.forEach(c => el.innerHTML += `<option value="${c}">${c} - ${CODE_INFO[c]}</option>`);
+                el.innerHTML = `<option value=""></option>` + exCodeOptions;
             }
         });
+        const repFilter = document.getElementById('repFilter');
+        if (repFilter) {
+            repFilter.innerHTML = '<option value="ALL">සියලුම කේතයන්</option>' + 
+                                  sCodeOptions + exCodeOptions;
+        }
     }
 
     function renderCodesList() {
-        document.getElementById('codes-s').innerHTML = S_CODES.map(c => `<div class="code-tag"><span class="code-num">${c}</span>${CODE_INFO[c]}</div>`).join('');
-        document.getElementById('codes-ex').innerHTML = EX_CODES.map(c => `<div class="code-tag"><span class="code-num" style="background:var(--danger); color:white;">${c}</span>${CODE_INFO[c]}</div>`).join('');
+        document.getElementById('codes-s').innerHTML = S_CODES.map(c => 
+            `<div class="code-tag"><span class="code-num">${c}</span>${CODE_INFO[c]}</div>`
+        ).join('');
+        
+        document.getElementById('codes-ex').innerHTML = EX_CODES.map(c => 
+            `<div class="code-tag"><span class="code-num" style="background:var(--danger); color:white;">${c}</span>${CODE_INFO[c]}</div>`
+        ).join('');
     }
 
     function validateForm(type) {
         const prefix = type === 'IN' ? 'in' : 'ex';
         const date = document.getElementById(prefix + 'Date').value;
         const amt = document.getElementById(prefix + 'Amt').value;
-        const code = document.getElementById(prefix + 'CodeSelect').value;
+        const code = $(`#${prefix}CodeSelect`).val();
         const desc = document.getElementById(prefix + 'Desc').value;
         
         if(!date) {
@@ -258,7 +318,7 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxpYaH1wS9ejKgTbnilk
         }
         if(!code || code === "") {
             showToast("⚠️ කරුණාකර " + (type === 'IN' ? 'ලැබීම්' : 'ගෙවීම්') + " කේතය තෝරන්න");
-            document.getElementById(prefix + 'CodeSelect').focus();
+            $(`#${prefix}CodeSelect`).select2('open');
             return false;
         }
         if(!desc.trim()) {
@@ -276,7 +336,7 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxpYaH1wS9ejKgTbnilk
             }
         } else {
             const voucher = document.getElementById('exVoucher').value;
-            const source = document.getElementById('exSourceSelect').value;
+            const source = $('#exSourceSelect').val();
             
             if(!voucher.trim()) {
                 showToast("⚠️ කරුණාකර වවුචර් අංකය ඇතුළත් කරන්න");
@@ -285,7 +345,7 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxpYaH1wS9ejKgTbnilk
             }
             if(!source || source === "") {
                 showToast("⚠️ කරුණාකර මූලාශ්‍ර අරමුදල තෝරන්න");
-                document.getElementById('exSourceSelect').focus();
+                $('#exSourceSelect').select2('open');
                 return false;
             }
         }
@@ -293,105 +353,111 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxpYaH1wS9ejKgTbnilk
         return true;
     }
 
-async function saveData(type) {
-    if(!validateForm(type)) return;
-    
-    const prefix = type === 'IN' ? 'in' : 'ex';
-    const existingId = document.getElementById('edit-id-' + prefix).value;
-    
-    // යාවත්කාලීනයද නැතහොත් නව ගනුදෙනුවක්ද යන්න හඳුනාගන්න
-    const isEdit = existingId && existingId !== '';
-    
-    // ID සැකසීම - පැරණි ID භාවිතා කරන්න හෝ නව ID එකක් සාදන්න
-    const currentId = isEdit ? parseInt(existingId) : (Date.now() + Math.floor(Math.random()*1000));
-    
-    const data = { 
-        action: 'save_transaction',
-        id: currentId,
-        date: document.getElementById(prefix + 'Date').value, 
-        ref: document.getElementById(prefix + 'Ref').value, 
-        vouch: type === 'EX' ? document.getElementById('exVoucher').value : '', 
-        code: document.getElementById(prefix + 'CodeSelect').value, 
-        amt: parseAmount(document.getElementById(prefix + 'Amt').value || 0), 
-        desc: document.getElementById(prefix + 'Desc').value, 
-        type: type, 
-        source: type === 'EX' ? document.getElementById('exSourceSelect').value : document.getElementById('inCodeSelect').value,
-        proj: document.getElementById(prefix + 'ProjSelect').value,
-        status: true,
-        isOp: false,
-        synced: false
-    };
-    
-    let db = getData();
-    
-    if (isEdit) {
-        // පැරණි ගනුදෙනුව සොයා යාවත්කාලීන කරන්න
-        const existingIndex = db.findIndex(item => item.id === currentId);
-        if (existingIndex !== -1) {
-            db[existingIndex] = data;
-            showToast("✅ ගනුදෙනුව සාර්ථකව යාවත්කාලීන කරන ලදී!");
-        } else {
-            // ID හමු නොවුනහොත් නව ගනුදෙනුවක් ලෙස එකතු කරන්න
-            db.push(data);
-            showToast("✅ නව ගනුදෙනුව සාර්ථකව ගිණුම්ගත කරන ලදී!");
-        }
-    } else {
-        // නව ගනුදෙනුවක්
-        db.push(data);
-        showToast("✅ නව ගනුදෙනුව සාර්ථකව ගිණුම්ගත කරන ලදී!");
-    }
-    
-    localStorage.setItem('sch_db', JSON.stringify(db));
-    
-    offlineQueue.push(data);
-    localStorage.setItem('sch_offline_queue', JSON.stringify(offlineQueue));
-
-    refreshDashboard();
-    loadRecentTable();
-    resetForms();
-    
-    // බොත්තම් පෙළ නැවත සකසන්න
-    document.getElementById('btn-save-' + prefix).innerText = type === 'IN' ? "ලැබීම ගිණුම්ගත කරන්න" : "ගෙවීම ගිණුම්ගත කරන්න";
-    
-    syncOfflineData();
-}
-    async function syncOfflineData() {
-        if (!navigator.onLine || offlineQueue.length === 0) return;
+    async function saveData(type) {
+        if(!validateForm(type)) return;
         
-        console.log("සමමුහුර්ත කිරීම ආරම්භ විය...");
-        const itemsToSync = [...offlineQueue];
+        const prefix = type === 'IN' ? 'in' : 'ex';
+        const existingId = document.getElementById('edit-id-' + prefix).value;
+        const isEdit = existingId && existingId !== '';
+        const currentId = isEdit ? parseInt(existingId) : (Date.now() + Math.floor(Math.random()*1000));
         
-        for (let item of itemsToSync) {
-            try {
-                const response = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(item)
-                });
+        const action = isEdit ? 'update_transaction' : 'save_transaction';
+        
+        const data = { 
+            action: action,
+            id: currentId,
+            date: document.getElementById(prefix + 'Date').value, 
+            ref: document.getElementById(prefix + 'Ref').value, 
+            vouch: type === 'EX' ? document.getElementById('exVoucher').value : '', 
+            code: $(`#${prefix}CodeSelect`).val(), 
+            amt: parseAmount(document.getElementById(prefix + 'Amt').value || 0), 
+            desc: document.getElementById(prefix + 'Desc').value, 
+            type: type, 
+            source: type === 'EX' ? $('#exSourceSelect').val() : $('#inCodeSelect').val(),
+            proj: $(`#${prefix}ProjSelect`).val(),
+            status: true,
+            isOp: false
+        };
+        
+        toggleLoading(true);
+        
+        try {
+            // First try to save to Google Sheets
+            const response = await fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+                // Successfully saved to Google Sheets, now update local cache
+                let db = getData();
                 
-                if (response.ok) {
-                    let db = getData();
-                    let dbItem = db.find(d => d.id === item.id);
-                    if (dbItem) dbItem.synced = true;
-                    localStorage.setItem('sch_db', JSON.stringify(db));
-                    
-                    offlineQueue = offlineQueue.filter(q => q.id !== item.id);
-                    localStorage.setItem('sch_offline_queue', JSON.stringify(offlineQueue));
+                if (isEdit) {
+                    const existingIndex = db.findIndex(item => item.id === currentId);
+                    if (existingIndex !== -1) {
+                        db[existingIndex] = data;
+                    }
+                } else {
+                    db.push(data);
                 }
-            } catch (e) {
-                console.error("Sync error for ID: " + item.id);
-                break;
+                
+                sessionStorage.setItem('sch_db', JSON.stringify(db));
+                showToast(isEdit ? "✅ ගනුදෙනුව සාර්ථකව යාවත්කාලීන කරන ලදී!" : "✅ නව ගනුදෙනුව සාර්ථකව ගිණුම්ගත කරන ලදී!");
+            } else {
+                throw new Error(result.message || 'Save failed');
             }
+        } catch (error) {
+            console.error("Save error:", error);
+            
+            if (navigator.onLine) {
+                // Online but server error - show error
+                showToast("❌ දත්ත පරික්ෂා කර බලා නැවත උත්සාහ කරන්න.");
+            } else {
+                // Offline mode - store in localStorage temporarily
+                let db = getData();
+                
+                if (isEdit) {
+                    const existingIndex = db.findIndex(item => item.id === currentId);
+                    if (existingIndex !== -1) {
+                        db[existingIndex] = { ...data, offline: true };
+                    }
+                } else {
+                    db.push({ ...data, offline: true });
+                }
+                
+                sessionStorage.setItem('sch_db', JSON.stringify(db));
+                showToast("⚠️ දත්ත පරිගණකය තුළ ගබඩා කරන ලදී! අන්තර්ජාලයට සම්බන්ධ වූ විට සමමුහුර්ත වේ.");
+            }
+        } finally {
+            toggleLoading(false);
         }
+        
+        refreshDashboard();
         loadRecentTable();
+        resetForms();
+        document.getElementById('btn-save-' + prefix).innerText = 
+            type === 'IN' ? "ලැබීම ගිණුම්ගත කරන්න" : "ගෙවීම ගිණුම්ගත කරන්න";
     }
 
     async function saveOpening() {
-        const code = document.getElementById('opCodeSelect').value;
+        const code = $('#opCodeSelect').val();
         const amt = parseAmount(document.getElementById('opAmt').value || 0);
-        if(amt <= 0) {
-            showToast("⚠️ මුදල ඇතුළත් කරන්න");
+        
+        if(!code || code === "") {
+            showToast("⚠️ කරුණාකර අරමුදල් කේතය තෝරන්න");
+            $('#opCodeSelect').select2('open');
             return;
         }
+        
+        if(amt <= 0) {
+            showToast("⚠️ මුදල ඇතුළත් කරන්න");
+            document.getElementById('opAmt').focus();
+            return;
+        }
+        
+        toggleLoading(true);
         
         const data = { 
             action: 'save_transaction', 
@@ -405,160 +471,84 @@ async function saveData(type) {
             type: 'IN', 
             source: code, 
             isOp: true, 
-            status: true,
-            synced: false
+            status: true
         };
         
-        let db = getData();
-        db.push(data);
-        localStorage.setItem('sch_db', JSON.stringify(db));
-        offlineQueue.push(data);
-        localStorage.setItem('sch_offline_queue', JSON.stringify(offlineQueue));
+        try {
+            const response = await fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+                // Update local cache
+                let db = getData();
+                db.push(data);
+                sessionStorage.setItem('sch_db', JSON.stringify(db));
+                showToast("✅ ආරම්භක ශේෂය ගිණුම්ගත කෙරිණි!");
+            } else {
+                throw new Error(result.message || 'Save failed');
+            }
+        } catch (error) {
+            console.error("Opening save error:", error);
+            showToast("❌ දත්ත සුරැකීමේ දෝෂයක්!");
+        } finally {
+            toggleLoading(false);
+        }
         
-        showToast("✅ ආරම්භක ශේෂය ගිණුම්ගත කෙරිණි!");
         refreshDashboard();
-        syncOfflineData();
-        
         document.getElementById('opAmt').value = '';
     }
 
-    // Existing code unchanged...
-
-async function saveAllocation() {
-    const code = document.getElementById('allocCodeSelect').value;
-    const amt = parseAmount(document.getElementById('allocAmt').value || 0);
-    
-    if(!code || code === "") {
-        showToast("⚠️ කරුණාකර ගෙවීම් කේතය තෝරන්න");
-        document.getElementById('allocCodeSelect').focus();
-        return;
-    }
-    
-    if(amt <= 0) {
-        showToast("⚠️ වලංගු මුදලක් ඇතුළත් කරන්න");
-        document.getElementById('allocAmt').focus();
-        return;
-    }
-    
-    toggleLoading(true);
-    
-    const data = {
-        action: 'save_allocation',
-        allocCode: code,
-        allocAmt: amt
-    };
-    
-    try {
-        const response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify(data)
-        });
+    async function saveAllocation() {
+        const code = $('#allocCodeSelect').val();
+        const amt = parseAmount(document.getElementById('allocAmt').value || 0);
         
-        if (!response.ok) {
-            throw new Error(`Server responded with ${response.status}`);
+        if(!code || code === "") {
+            showToast("⚠️ කරුණාකර ගෙවීම් කේතය තෝරන්න");
+            $('#allocCodeSelect').select2('open');
+            return;
         }
         
-        const result = await response.json();
-        
-        if (result.status === 'success') {
-            // Only update localStorage after successful server save
-            allocations[code] = amt; 
-            localStorage.setItem('sch_allocations', JSON.stringify(allocations));
-            showToast("✅ ප්‍රතිපාදන ගිණුම්ගත කරන ලදී!");
-        } else {
-            throw new Error(result.message || 'Unknown server error');
+        if(amt <= 0) {
+            showToast("⚠️ වලංගු මුදලක් ඇතුළත් කරන්න");
+            document.getElementById('allocAmt').focus();
+            return;
         }
-    } catch (error) {
-        console.error("Allocation save error:", error);
         
-        if (navigator.onLine) {
-            // Online but server error - add to offline queue
-            offlineQueue.push(data);
-            localStorage.setItem('sch_offline_queue', JSON.stringify(offlineQueue));
-            allocations[code] = amt; 
-            localStorage.setItem('sch_allocations', JSON.stringify(allocations));
-            showToast("⚠️ දත්ත දොෂයකින් ගබඩා කළා. අන්තර්ජාලය සමඟ සමමුහුර්ත වනු ඇත.");
-        } else {
-            // Offline - store locally and add to queue
-            offlineQueue.push(data);
-            localStorage.setItem('sch_offline_queue', JSON.stringify(offlineQueue));
-            allocations[code] = amt; 
-            localStorage.setItem('sch_allocations', JSON.stringify(allocations));
-            showToast("✅ ප්‍රතිපාදන දත්ත නොසම්බන්ධිතව ගබඩා කරන ලදී!");
-        }
-    } finally {
-        toggleLoading(false);
-        document.getElementById('allocAmt').value = '';
-    }
-}
-
-// Offline sync function should also handle allocation data
-async function syncOfflineData() {
-    if (!navigator.onLine || offlineQueue.length === 0) return;
-    
-    console.log("සමමුහුර්ත කිරීම ආරම්භ විය...");
-    const itemsToSync = [...offlineQueue];
-    
-    for (let item of itemsToSync) {
+        toggleLoading(true);
+        
+        const data = {
+            action: 'save_allocation',
+            allocCode: code,
+            allocAmt: amt
+        };
+        
         try {
             const response = await fetch(SCRIPT_URL, {
                 method: 'POST',
-                body: JSON.stringify(item)
+                body: JSON.stringify(data)
             });
             
-            if (response.ok) {
-                const result = await response.json();
-                
-                if (result.status === 'success') {
-                    // Remove from queue
-                    offlineQueue = offlineQueue.filter(q => {
-                        // Compare based on action and data
-                        return !(q.action === item.action && 
-                               q.allocCode === item.allocCode && 
-                               q.allocAmt === item.allocAmt);
-                    });
-                    localStorage.setItem('sch_offline_queue', JSON.stringify(offlineQueue));
-                    
-                    // If it's an allocation, ensure local storage is updated
-                    if (item.action === 'save_allocation') {
-                        allocations[item.allocCode] = item.allocAmt;
-                        localStorage.setItem('sch_allocations', JSON.stringify(allocations));
-                    }
-                    
-                    console.log("Synced item:", item);
-                }
-            }
-        } catch (e) {
-            console.error("Sync error for item:", item, e);
-            break; // Stop sync if error occurs
-        }
-    }
-    
-    // Also sync transaction data
-    let db = getData();
-    let unSynced = db.filter(r => !r.synced);
-    
-    for (let item of unSynced) {
-        try {
-            const response = await fetch(SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify(item)
-            });
+            const result = await response.json();
             
-            if (response.ok) {
-                item.synced = true;
+            if (result.status === 'success') {
+                allocations[code] = amt; 
+                sessionStorage.setItem('sch_allocations', JSON.stringify(allocations));
+                showToast("✅ ප්‍රතිපාදන ගිණුම්ගත කරන ලදී!");
+            } else {
+                throw new Error(result.message || 'Save failed');
             }
-        } catch (e) {
-            console.error("Transaction sync error:", e);
-            break;
+        } catch (error) {
+            console.error("Allocation save error:", error);
+            showToast("❌ ප්‍රතිපාදන සුරැකීමේ දෝෂයක්!");
+        } finally {
+            toggleLoading(false);
+            document.getElementById('allocAmt').value = '';
         }
     }
-    
-    localStorage.setItem('sch_db', JSON.stringify(db));
-    loadRecentTable();
-}
-
-// Rest of the code remains unchanged...
 
     function openReport(type) {
         currentReport = type;
@@ -592,178 +582,323 @@ async function syncOfflineData() {
         });
     }
 
-function viewCodeDetails(code, type) {
-    const db = getData();
-    const from = document.getElementById('repFrom').value;
-    const to = document.getElementById('repTo').value;
-    
-    // ලැබීම් ගනුදෙනු
-    const incomeTransactions = db.filter(r => 
-        r.code === code && 
-        r.type === 'IN' && 
-        (!from || r.date >= from) && 
-        (!to || r.date <= to)
-    );
-    
-    // ගෙවීම් ගනුදෙනු
-    const expenseTransactions = db.filter(r => 
-        r.source === code && 
-        r.type === 'EX' && 
-        (!from || r.date >= from) && 
-        (!to || r.date <= to)
-    );
-    
-    // මුලු ලැබීම්
-    const totalIncome = incomeTransactions.reduce((sum, t) => sum + t.amt, 0);
-    
-    // මුලු ගෙවීම්
-    const totalExpense = expenseTransactions.reduce((sum, t) => sum + t.amt, 0);
-    
-    // ශේෂය
-    const balance = totalIncome - totalExpense;
-    
-    document.getElementById('modalCodeTitle').innerText = `${code} - ${CODE_INFO[code]} (${type === 'IN' ? 'ලැබීම්' : 'ගෙවීම්'})`;
-    
-    let html = `
-    <div style="margin-bottom: 20px;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-            <div style="background: #d4edda; padding: 15px; border-radius: 8px; text-align: center;">
-                <div style="font-size: 14px; color: #155724;">මුළු ලැබීම්</div>
-                <div style="font-size: 24px; font-weight: bold; color: green;"> ${totalIncome.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
-            </div>
-            <div style="background: #f8d7da; padding: 15px; border-radius: 8px; text-align: center;">
-                <div style="font-size: 14px; color: #721c24;">මුළු ගෙවීම්</div>
-                <div style="font-size: 24px; font-weight: bold; color: red;">${totalExpense.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
-            </div>
-            <div style="background: #d1ecf1; padding: 15px; border-radius: 8px; text-align: center;">
-                <div style="font-size: 14px; color: #0c5460;">ශේෂය</div>
-                <div style="font-size: 24px; font-weight: bold; color: ${balance >= 0 ? 'blue' : 'orange'};">${balance.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
-            </div>
-        </div>
+    function viewCodeDetails(code, type) {
+        const db = getData();
+        const from = document.getElementById('repFrom').value;
+        const to = document.getElementById('repTo').value;
         
-        <div style="display: flex; gap: 15px; margin-bottom: 20px;">
-            <div style="flex: 1; background: #e2e3e5; padding: 10px; border-radius: 8px; text-align: center;">
-                <div style="font-size: 14px; color: #383d41;">ලැබීම් ගනුදෙනු</div>
-                <div style="font-size: 20px; font-weight: bold; color: #383d41;">${incomeTransactions.length}</div>
-            </div>
-            <div style="flex: 1; background: #e2e3e5; padding: 10px; border-radius: 8px; text-align: center;">
-                <div style="font-size: 14px; color: #383d41;">ගෙවීම් ගනුදෙනු</div>
-                <div style="font-size: 20px; font-weight: bold; color: #383d41;">${expenseTransactions.length}</div>
+        const relevantTransactions = db.filter(r => {
+            if (type === 'IN') {
+                return (r.code === code || r.source === code) && 
+                       r.type === 'IN' && 
+                       (!from || r.date >= from) && 
+                       (!to || r.date <= to);
+            } else {
+                return r.code === code && 
+                       r.type === 'EX' && 
+                       (!from || r.date >= from) && 
+                       (!to || r.date <= to);
+            }
+        });
+        
+        const incomeTransactions = type === 'IN' ? relevantTransactions : 
+            db.filter(r => r.code === code && r.type === 'IN' && (!from || r.date >= from) && (!to || r.date <= to));
+        
+        const expenseTransactions = type === 'EX' ? relevantTransactions : 
+            db.filter(r => r.code === code && r.type === 'EX' && (!from || r.date >= from) && (!to || r.date <= to));
+        
+        const sourceCodesUsed = {};
+        if (type === 'EX') {
+            expenseTransactions.forEach(exp => {
+                if (exp.source && S_CODES.includes(exp.source)) {
+                    if (!sourceCodesUsed[exp.source]) {
+                        sourceCodesUsed[exp.source] = {
+                            code: exp.source,
+                            name: CODE_INFO[exp.source],
+                            total: 0,
+                            transactions: []
+                        };
+                    }
+                    sourceCodesUsed[exp.source].total += exp.amt;
+                    sourceCodesUsed[exp.source].transactions.push(exp);
+                }
+            });
+        }
+        
+        const expenseCodesUsed = {};
+        if (type === 'IN') {
+            const expensesFromThisSource = db.filter(r => 
+                r.source === code && 
+                r.type === 'EX' && 
+                (!from || r.date >= from) && 
+                (!to || r.date <= to)
+            );
+            
+            expensesFromThisSource.forEach(exp => {
+                if (exp.code && EX_CODES.includes(exp.code)) {
+                    if (!expenseCodesUsed[exp.code]) {
+                        expenseCodesUsed[exp.code] = {
+                            code: exp.code,
+                            name: CODE_INFO[exp.code],
+                            total: 0,
+                            transactions: []
+                        };
+                    }
+                    expenseCodesUsed[exp.code].total += exp.amt;
+                    expenseCodesUsed[exp.code].transactions.push(exp);
+                }
+            });
+        }
+        
+        const totalIncome = incomeTransactions.reduce((sum, t) => sum + t.amt, 0);
+        const totalExpense = expenseTransactions.reduce((sum, t) => sum + t.amt, 0);
+        const balance = totalIncome - totalExpense;
+        
+        document.getElementById('modalCodeTitle').innerText = `${code} - ${CODE_INFO[code]} (${type === 'IN' ? 'ලැබීම්' : 'ගෙවීම්'})`;
+        
+        let html = `
+        <div style="margin-bottom: 20px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <div style="background: #d4edda; padding: 15px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 14px; color: #155724;">මුළු ලැබීම්</div>
+                    <div style="font-size: 24px; font-weight: bold; color: green;"> ${totalIncome.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+                </div>
+                <div style="background: #f8d7da; padding: 15px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 14px; color: #721c24;">මුළු ගෙවීම්</div>
+                    <div style="font-size: 24px; font-weight: bold; color: red;">${totalExpense.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+                </div>
+                <div style="background: #d1ecf1; padding: 15px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 14px; color: #0c5460;">ශේෂය</div>
+                    <div style="font-size: 24px; font-weight: bold; color: ${balance >= 0 ? 'blue' : 'orange'};">${balance.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+                </div>
+            </div>`;
+        
+        if (type === 'EX' && Object.keys(sourceCodesUsed).length > 0) {
+            html += `
+            <h4 style="color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 5px; margin-top: 20px;">
+                <span style="background: var(--primary); color: white; padding: 3px 8px; border-radius: 4px; margin-right: 10px;">💰</span>
+                වියදම් දරා ඇති ලැබීම් කේත (S Codes)
+            </h4>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px;">
+                <thead>
+                    <tr style="background: #e8f5e9;">
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">ලැබීම් කේතය</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">විස්තරය</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">මුළු වියදම (රු.)</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">ගනුදෙනු</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            const sortedSourceCodes = Object.values(sourceCodesUsed).sort((a, b) => {
+                return S_CODES.indexOf(a.code) - S_CODES.indexOf(b.code);
+            });
+            
+            sortedSourceCodes.forEach(source => {
+                html += `
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #2e7d32;">${source.code}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${source.name}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold; color: #c62828;">
+                        ${source.total.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                    </td>
+                    <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">
+                        <span style="background: #6c757d; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px;">
+                            ${source.transactions.length}
+                        </span>
+                    </td>
+                </tr>`;
+            });
+            
+            html += `
+                </tbody>
+                <tfoot>
+                    <tr style="background: #d4edda; font-weight: bold;">
+                        <td colspan="2" style="padding: 10px; border: 1px solid #ddd; text-align: right;">මුළු වියදම:</td>
+                        <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #c62828; font-size: 16px;">
+                            ${Object.values(sourceCodesUsed).reduce((sum, s) => sum + s.total, 0).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                        </td>
+                        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
+                            ${expenseTransactions.length}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>`;
+        }
+        
+        if (type === 'IN' && Object.keys(expenseCodesUsed).length > 0) {
+            html += `
+            <h4 style="color: var(--danger); border-bottom: 2px solid var(--danger); padding-bottom: 5px; margin-top: 20px;">
+                <span style="background: var(--danger); color: white; padding: 3px 8px; border-radius: 4px; margin-right: 10px;">💸</span>
+                මෙම ලැබීම් කේතයෙන් ගෙවා ඇති වියදම් කේත (EX Codes)
+            </h4>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px;">
+                <thead>
+                    <tr style="background: #fdeaea;">
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">ගෙවීම් කේතය</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">විස්තරය</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">මුළු වියදම (රු.)</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">ගනුදෙනු</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            const sortedExpenseCodes = Object.values(expenseCodesUsed).sort((a, b) => {
+                return EX_CODES.indexOf(a.code) - EX_CODES.indexOf(b.code);
+            });
+            
+            sortedExpenseCodes.forEach(expCode => {
+                html += `
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #b71c1c;">${expCode.code}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${expCode.name}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold; color: #c62828;">
+                        ${expCode.total.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                    </td>
+                    <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">
+                        <span style="background: #6c757d; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px;">
+                            ${expCode.transactions.length}
+                        </span>
+                    </td>
+                </tr>`;
+            });
+            
+            html += `
+                </tbody>
+                <tfoot>
+                    <tr style="background: #f5c6cb; font-weight: bold;">
+                        <td colspan="2" style="padding: 10px; border: 1px solid #ddd; text-align: right;">මුළු වියදම:</td>
+                        <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #c62828; font-size: 16px;">
+                            ${Object.values(expenseCodesUsed).reduce((sum, e) => sum + e.total, 0).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                        </td>
+                        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
+                            ${expenseTransactions.length}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>`;
+        }
+        
+        if (type === 'IN') {
+            html += `
+                <h4 style="color: green; border-bottom: 2px solid #28a745; padding-bottom: 5px; margin-top: 20px;">
+                    <span style="background: #28a745; color: white; padding: 3px 8px; border-radius: 4px; margin-right: 10px;">✔</span>
+                    ලැබීම් ගනුදෙනු
+                </h4>`;
+            
+            if (incomeTransactions.length === 0) {
+                html += `<p style="text-align: center; color: #666; padding: 20px; background: #f8f9fa; border-radius: 8px;">ලැබීම් ගනුදෙනු කිසිවක් නැත</p>`;
+            } else {
+                html += `
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <thead>
+                        <tr style="background: #d4edda;">
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">දිනය</th>
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">විස්තරය</th>
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">ලදුපත් අංකය</th>
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">ව්‍යාපෘතිය</th>
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">මුදල (රු.)</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+                
+                incomeTransactions.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(tr => {
+                    html += `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 8px; border: 1px solid #ddd;">${tr.date}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${tr.desc}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${tr.ref || '-'}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${tr.proj || '-'}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold; color: green;">${tr.amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                    </tr>`;
+                });
+                
+                html += `
+                    </tbody>
+                    <tfoot>
+                        <tr style="background: #c3e6cb; font-weight: bold;">
+                            <td colspan="4" style="padding: 10px; border: 1px solid #ddd; text-align: right;">ලැබීම් මුළු එකතුව:</td>
+                            <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: green;">${totalIncome.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                        </tr>
+                    </tfoot>
+                </table>`;
+            }
+        }
+        
+        if (type === 'EX') {
+            html += `
+                <h4 style="color: #dc3545; border-bottom: 2px solid #dc3545; padding-bottom: 5px; margin-top: 20px;">
+                    <span style="background: #dc3545; color: white; padding: 3px 8px; border-radius: 4px; margin-right: 10px;">✗</span>
+                    ගෙවීම් ගනුදෙනු
+                </h4>`;
+            
+            if (expenseTransactions.length === 0) {
+                html += `<p style="text-align: center; color: #666; padding: 20px; background: #f8f9fa; border-radius: 8px;">ගෙවීම් ගනුදෙනු කිසිවක් නැත</p>`;
+            } else {
+                html += `
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <thead>
+                        <tr style="background: #f8d7da;">
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">දිනය</th>
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">විස්තරය</th>
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">වවුචර් අංකය</th>
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">ව්‍යාපෘතිය</th>
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">මූලාශ්‍ර (S Code)</th>
+                            <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">මුදල (රු.)</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+                
+                expenseTransactions.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(tr => {
+                    html += `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 8px; border: 1px solid #ddd;">${tr.date}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${tr.desc}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${tr.vouch || tr.ref || '-'}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${tr.proj || '-'}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #2e7d32;">
+                            ${tr.source || '-'}
+                            ${tr.source && CODE_INFO[tr.source] ? `<br><small style="color: #666;">${CODE_INFO[tr.source]}</small>` : ''}
+                        </td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold; color: red;">${tr.amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                    </tr>`;
+                });
+                
+                html += `
+                    </tbody>
+                    <tfoot>
+                        <tr style="background: #f5c6cb; font-weight: bold;">
+                            <td colspan="5" style="padding: 10px; border: 1px solid #ddd; text-align: right;">ගෙවීම් මුළු එකතුව:</td>
+                            <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: red;">${totalExpense.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                        </tr>
+                    </tfoot>
+                </table>`;
+            }
+        }
+        
+        html += `
+            <div style="background: #e8f4f8; padding: 15px; border-radius: 8px; margin-top: 30px; border-left: 5px solid #17a2b8;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 14px; color: #0c5460;">කේතය: <strong>${code}</strong></div>
+                        <div style="font-size: 14px; color: #0c5460; margin-top: 5px;">${CODE_INFO[code]}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 18px; font-weight: bold; color: ${balance >= 0 ? 'blue' : 'orange'};">
+                            අවසාන ශේෂය: ${balance.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                        </div>
+                        <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                            (ලැබීම් ${totalIncome.toLocaleString(undefined, {minimumFractionDigits: 2})} - ගෙවීම් ${totalExpense.toLocaleString(undefined, {minimumFractionDigits: 2})})
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>`;
-    
-    // ලැබීම් ගනුදෙනු ලැයිස්තුව (සැමවිටම පෙන්වන්න)
-    html += `
-        <h4 style="color: green; border-bottom: 2px solid #28a745; padding-bottom: 5px; margin-top: 20px;">
-            <span style="background: #28a745; color: white; padding: 3px 8px; border-radius: 4px; margin-right: 10px;">✔</span>
-            ලැබීම් ගනුදෙනු
-        </h4>`;
-    
-    if (incomeTransactions.length === 0) {
-        html += `<p style="text-align: center; color: #666; padding: 20px; background: #f8f9fa; border-radius: 8px;">ලැබීම් ගනුදෙනු කිසිවක් නැත</p>`;
-    } else {
-        html += `
-        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-            <thead>
-                <tr style="background: #d4edda;">
-                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">දිනය</th>
-                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">විස්තරය</th>
-                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">ලදුපත් අංකය</th>
-                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">ව්‍යාපෘතිය</th>
-                    <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">මුදල (රු.)</th>
-                </tr>
-            </thead>
-            <tbody>`;
         
-        incomeTransactions.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(tr => {
-            html += `
-            <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 8px; border: 1px solid #ddd;">${tr.date}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">${tr.desc}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">${tr.ref || '-'}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">${tr.proj || '-'}</td>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold; color: green;">${tr.amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-            </tr>`;
-        });
-        
-        html += `
-            </tbody>
-            <tfoot>
-                <tr style="background: #c3e6cb; font-weight: bold;">
-                    <td colspan="4" style="padding: 10px; border: 1px solid #ddd; text-align: right;">ලැබීම් මුළු එකතුව:</td>
-                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: green;">${totalIncome.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                </tr>
-            </tfoot>
-        </table>`;
+        document.getElementById('codeDetailsContent').innerHTML = html;
+        document.getElementById('codeDetailsModal').style.display = 'flex';
     }
-    
-    // ගෙවීම් ගනුදෙනු ලැයිස්තුව (සැමවිටම පෙන්වන්න)
-    html += `
-        <h4 style="color: #dc3545; border-bottom: 2px solid #dc3545; padding-bottom: 5px; margin-top: 30px;">
-            <span style="background: #dc3545; color: white; padding: 3px 8px; border-radius: 4px; margin-right: 10px;">✗</span>
-            ගෙවීම් ගනුදෙනු
-        </h4>`;
-    
-    if (expenseTransactions.length === 0) {
-        html += `<p style="text-align: center; color: #666; padding: 20px; background: #f8f9fa; border-radius: 8px;">ගෙවීම් ගනුදෙනු කිසිවක් නැත</p>`;
-    } else {
-        html += `
-        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-            <thead>
-                <tr style="background: #f8d7da;">
-                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">දිනය</th>
-                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">විස්තරය</th>
-                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">වවුචර් අංකය</th>
-                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">ව්‍යාපෘතිය</th>
-                    <th style="padding: 10px; border: 1px solid #ddd; text-align: right;">මුදල (රු.)</th>
-                </tr>
-            </thead>
-            <tbody>`;
-        
-        expenseTransactions.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(tr => {
-            html += `
-            <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 8px; border: 1px solid #ddd;">${tr.date}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">${tr.desc}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">${tr.vouch || tr.ref || '-'}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">${tr.proj || '-'}</td>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold; color: red;">${tr.amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-            </tr>`;
-        });
-        
-        html += `
-            </tbody>
-            <tfoot>
-                <tr style="background: #f5c6cb; font-weight: bold;">
-                    <td colspan="4" style="padding: 10px; border: 1px solid #ddd; text-align: right;">ගෙවීම් මුළු එකතුව:</td>
-                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: red;">${totalExpense.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                </tr>
-            </tfoot>
-        </table>`;
-    }
-    
-    html += `
-        <div style="background: #e8f4f8; padding: 15px; border-radius: 8px; margin-top: 30px; border-left: 5px solid #17a2b8;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <div style="font-size: 14px; color: #0c5460;">කේතය: <strong>${code}</strong></div>
-                    <div style="font-size: 14px; color: #0c5460; margin-top: 5px;">${CODE_INFO[code]}</div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-size: 18px; font-weight: bold; color: ${balance >= 0 ? 'blue' : 'orange'};">
-                        අවසාන ශේෂය: ${balance.toLocaleString(undefined, {minimumFractionDigits: 2})}
-                    </div>
-                    <div style="font-size: 12px; color: #666; margin-top: 5px;">
-                        (ලැබීම් ${totalIncome.toLocaleString(undefined, {minimumFractionDigits: 2})} - ගෙවීම් ${totalExpense.toLocaleString(undefined, {minimumFractionDigits: 2})})
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>`;
-    
-    document.getElementById('codeDetailsContent').innerHTML = html;
-    document.getElementById('codeDetailsModal').style.display = 'flex';
-}
+
     function closeCodeDetails() {
         document.getElementById('codeDetailsModal').style.display = 'none';
     }
@@ -777,237 +912,236 @@ function viewCodeDetails(code, type) {
         
         let filtered = db.filter(r => !r.isOp && (!from || r.date >= from) && (!to || r.date <= to));
 
-	if (currentReport === 'CASHBOOK') {
-    document.getElementById('report-header-title').innerText = "මුදල් පොත (Cash Book)";
-    let bal = db.filter(r => r.isOp).reduce((a, c) => a + c.amt, 0);
-    
-    if (from) { 
-        db.filter(r => !r.isOp && r.date < from).forEach(r => bal += (r.type === 'IN' ? r.amt : -r.amt)); 
-    }
-
-    // නව තීරු අනුපිළිවෙල: දිනය, විස්තරය, ලදුපත්/වවුචර්, චෙක්පත්, ලැබීම්, ගෙවීම්, ශේෂය
-    html = `<table><thead><tr>
-                <th>දිනය</th>
-                <th>විස්තරය</th>
-                <th>ලදුපත්/වවුචර්</th>
-                <th>චෙක්පත් අංකය</th>
-                <th>ලැබීම් (+)</th>
-                <th>ගෙවීම් (-)</th>
-                <th>ශේෂය</th>
-            </tr></thead>
-            <tbody>
-            <tr style="background:#f0f0f0; font-weight:bold;">
-                <td colspan="6" style="text-align:right">ආරම්භක ශේෂය:</td>
-                <td style="text-align:right"> ${bal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-            </tr>`;
-
-    filtered.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(r => {
-        bal += (r.type === 'IN' ? r.amt : -r.amt);
-        
-        html += `<tr>
-                    <td>${r.date ? r.date.split('T')[0] : ''}</td>
-                    <td>${r.desc}</td>
-                    <td>${r.type === 'IN' ? (r.ref || '-') : (r.vouch || '-')}</td>
-                    <td>${r.type === 'EX' ? (r.ref || '-') : '-'}</td>
-                    <td style="text-align:right; color:green;">${r.type === 'IN' ? (r.amt > 0 ? r.amt.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-') : '-'}</td>
-                    <td style="text-align:right; color:red;">${r.type === 'EX' ? (r.amt > 0 ? r.amt.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-') : '-'}</td>
-                    <td style="text-align:right; font-weight:bold">${bal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                </tr>`;
-    });
-    html += '</tbody></table>';
-    document.getElementById('report-content').innerHTML = html;
-}
-else if(currentReport === 'IN' || currentReport === 'EX') {
-    document.getElementById('report-header-title').innerText = 
-        (currentReport === 'IN' ? "ලැබීම් විශ්ලේෂණ වාර්තාව" : "ගෙවීම් විශ්ලේෂණ වාර්තාව") + 
-        (selectedCode !== 'ALL' ? ` - ${selectedCode}` : "");
- 
-    const codes = (selectedCode === 'ALL') ? 
-        (currentReport === 'IN' ? S_CODES : EX_CODES) : 
-        [selectedCode];
- 
-    const openingBalances = {};
-    codes.forEach(code => {
-        const openingAmt = db.filter(r => r.isOp && r.source === code)
-            .reduce((sum, r) => sum + r.amt, 0);
-        openingBalances[code] = openingAmt;
-    });
-  
-    html += `
-    <table style="width: 100%; border-collapse: collapse; border: 2px solid ${currentReport === 'IN' ? '#28a745' : '#dc3545'}; margin-bottom: 30px;">
-        <thead>
-            <tr style="background: ${currentReport === 'IN' ? '#28a745' : '#dc3545'}; color: white;">
-                <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">කේතය</th>
-                <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">විස්තරය</th>
-                ${currentReport === 'IN' ? '<th style="padding: 12px; border: 1px solid #ddd; text-align: right;">ආරම්භක ශේෂය (රු.)</th>' : ''}
-                <th style="padding: 12px; border: 1px solid #ddd; text-align: center;">ගනුදෙනු ගණන</th>
-                <th style="padding: 12px; border: 1px solid #ddd; text-align: right;">මුළු ${currentReport === 'IN' ? 'ලැබීම්' : 'ගෙවීම්'} (රු.)</th>
-                ${currentReport === 'IN' ? '<th style="padding: 12px; border: 1px solid #ddd; text-align: right;">මුළු එකතුව (රු.)</th>' : ''}
-                <th style="padding: 12px; border: 1px solid #ddd; text-align: center;">ක්‍රියා</th>
-            </tr>
-        </thead>
-        <tbody>`;
-    
-    let grandTotal = 0;
-    let totalTransactions = 0;
-    let totalOpening = 0;
-    
-    codes.forEach(code => {
-        const transactions = db.filter(r => 
-            r.type === currentReport && 
-            r.code === code && 
-            (!from || r.date >= from) && 
-            (!to || r.date <= to)
-        );
-        
-        const codeTotal = transactions.reduce((sum, t) => sum + t.amt, 0);
-        const transactionCount = transactions.length;
-        const openingAmt = openingBalances[code] || 0;
-        const grandTotalForCode = currentReport === 'IN' ? (openingAmt + codeTotal) : codeTotal;
-        
-        grandTotal += currentReport === 'IN' ? grandTotalForCode : codeTotal;
-        totalTransactions += transactionCount;
-        totalOpening += openingAmt;
-        
-        html += `
-        <tr style="border-bottom: 1px solid #eee; ${transactionCount > 0 ? 'background: #f9f9f9;' : ''}">
-            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold; color: var(--primary);">${code}</td>
-            <td style="padding: 10px; border: 1px solid #ddd;">${CODE_INFO[code]}</td>
-            ${currentReport === 'IN' ? 
-                `<td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #006400; font-weight: bold;">
-                    ${openingAmt > 0 ? openingAmt.toLocaleString(undefined, {minimumFractionDigits: 2}) : ' - '}
-                </td>` : ''}
-            <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
-                <span style="display: inline-block; background: ${transactionCount > 0 ? (currentReport === 'IN' ? '#28a745' : '#dc3545') : '#6c757d'}; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px;">
-                    ${transactionCount}
-                </span>
-            </td>
-            <td style="padding: 10px; border: 1px solid #ddd; text-align: right; font-weight: bold; color: ${currentReport === 'IN' ? 'green' : 'red'};">${codeTotal > 0 ? codeTotal.toLocaleString(undefined, {minimumFractionDigits: 2}) : ' - '}</td>
-            ${currentReport === 'IN' ? 
-                `<td style="padding: 10px; border: 1px solid #ddd; text-align: right; font-weight: bold; color: #1b5e20; background: #e8f5e9;">
-                    ${grandTotalForCode > 0 ? grandTotalForCode.toLocaleString(undefined, {minimumFractionDigits: 2}) : ' - '}
-                </td>` : ''}
-            <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
-                <button onclick="viewCodeDetails('${code}', '${currentReport}')" 
-                    style="background: ${currentReport === 'IN' ? 'var(--success)' : 'var(--danger)'}; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 auto; height: 36px; min-width: 100px; transition: all 0.3s;"
-                    onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 3px 10px rgba(0,0,0,0.15)'"
-                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                    <span>🔍</span> විස්තර
-                </button>
-            </td>
-        </tr>`;
-    });
-    
-    const colspan = currentReport === 'IN' ? 2 : 2;
-    const totalColspan = currentReport === 'IN' ? 3 : 2;
-    
-    html += `
-        </tbody>
-        <tfoot>
-            <tr style="background: ${currentReport === 'IN' ? '#d4edda' : '#f8d7da'}; font-weight: bold;">
-                <td colspan="${colspan}" style="padding: 12px; border: 1px solid #ddd; text-align: right;">මුළු එකතුව:</td>
-                ${currentReport === 'IN' ? 
-                    `<td style="padding: 12px; border: 1px solid #ddd; text-align: right; color: #006400;">
-                         ${totalOpening > 0 ? totalOpening.toLocaleString(undefined, {minimumFractionDigits: 2}) : ' - '}
-                    </td>` : ''}
-                <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">
-                    <span style="display: inline-block; background: #343a40; color: white; padding: 4px 10px; border-radius: 12px;">
-                        ${totalTransactions}
-                    </span>
-                </td>
-                <td style="padding: 12px; border: 1px solid #ddd; text-align: right; color: ${currentReport === 'IN' ? 'green' : 'red'};">
-                     ${(grandTotal - (currentReport === 'IN' ? totalOpening : 0)) > 0 ? (grandTotal - (currentReport === 'IN' ? totalOpening : 0)).toLocaleString(undefined, {minimumFractionDigits: 2}) : ' - '}
-                </td>
-                ${currentReport === 'IN' ? 
-                    `<td style="padding: 12px; border: 1px solid #ddd; text-align: right; color: #1b5e20; font-size: 18px; background: #c8e6c9;">
-                         ${grandTotal > 0 ? grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2}) : ' - '}
-                    </td>` : ''}
-                <td style="padding: 12px; border: 1px solid #ddd;"></td>
-            </tr>
-        </tfoot>
-    </table>`;
-    
-    if (selectedCode === 'ALL') {
-        html += `<h3 style="color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 30px;">කේත අනුව විස්තරාත්මක වාර්තා</h3>`;
-        
-        codes.forEach(code => {
-            const transactions = db.filter(r => 
-                r.type === currentReport && 
-                r.code === code && 
-                (!from || r.date >= from) && 
-                (!to || r.date <= to)
-            );
+        if (currentReport === 'CASHBOOK') {
+            document.getElementById('report-header-title').innerText = "මුදල් පොත (Cash Book)";
+            let bal = db.filter(r => r.isOp).reduce((a, c) => a + c.amt, 0);
             
-            if (transactions.length > 0) {
-                const codeTotal = transactions.reduce((sum, t) => sum + t.amt, 0);
-                const openingAmt = openingBalances[code] || 0;
-                const codeGrandTotal = currentReport === 'IN' ? (openingAmt + codeTotal) : codeTotal;
-                
-                html += `
-                <div style="margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
-                    <div style="background: ${currentReport === 'IN' ? '#e8f5e9' : '#fdeaea'}; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
-                        <div>
-                            <strong style="color: var(--primary);">${code}</strong> - ${CODE_INFO[code]}
-                            <span style="margin-left: 15px; font-size: 12px; color: #666;">
-                                ගනුදෙනු: ${transactions.length} | 
-                                ${currentReport === 'IN' ? `ආරම්භක:  ${openingAmt > 0 ? openingAmt.toLocaleString(undefined, {minimumFractionDigits: 2}) : ' - '} | ` : ''}
-                                ${currentReport === 'IN' ? 'ලැබීම්' : 'ගෙවීම්'}:  ${codeTotal > 0 ? codeTotal.toLocaleString(undefined, {minimumFractionDigits: 2}) : ' - '}
-                                ${currentReport === 'IN' ? ` | මුළු:  ${codeGrandTotal > 0 ? codeGrandTotal.toLocaleString(undefined, {minimumFractionDigits: 2}) : ' - '}` : ''}
-                            </span>
-                        </div>
-                        <span style="font-size: 18px;">▼</span>
-                    </div>
-                    <div style="padding: 15px; display: none;">
-                        ${currentReport === 'IN' && openingAmt > 0 ? `
-                        <div style="background: #e8f5e9; padding: 10px; border-radius: 5px; margin-bottom: 10px; border-left: 4px solid #28a745;">
-                            <strong>ආරම්භක ශේෂය:</strong>  ${openingAmt.toLocaleString(undefined, {minimumFractionDigits: 2})}
-                        </div>` : ''}
-                        
-                        <table style="width: 100%; border-collapse: collapse;">
-                            <thead>
-                                <tr style="background: ${currentReport === 'IN' ? '#c8e6c9' : '#f5c6cb'};">
-                                    <th style="padding: 8px; border: 1px solid #ddd;">දිනය</th>
-                                    <th style="padding: 8px; border: 1px solid #ddd;">විස්තරය</th>
-                                    <th style="padding: 8px; border: 1px solid #ddd;">${currentReport === 'IN' ? 'ලදුපත් අංකය' : 'වවුචර් අංකය'}</th>
-                                    <th style="padding: 8px; border: 1px solid #ddd;">ව්‍යාපෘතිය</th>
-                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">මුදල (රු.)</th>
-                                </tr>
-                            </thead>
-                            <tbody>`;
-                
-                transactions.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(tr => {
-                    html += `
-                        <tr style="border-bottom: 1px solid #eee;">
-                            <td style="padding: 8px; border: 1px solid #ddd;">${tr.date}</td>
-                            <td style="padding: 8px; border: 1px solid #ddd;">${tr.desc}</td>
-                            <td style="padding: 8px; border: 1px solid #ddd;">${currentReport === 'IN' ? tr.ref : (tr.vouch || tr.ref)}</td>
-                            <td style="padding: 8px; border: 1px solid #ddd;">${tr.proj || '-'}</td>
-                            <td style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold; color: ${currentReport === 'IN' ? 'green' : 'red'};">${tr.amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                        </tr>`;
-                });
-                
-                html += `
-                            </tbody>
-                            <tfoot>
-                                <tr style="background: ${currentReport === 'IN' ? '#a5d6a7' : '#f1b0b7'}; font-weight: bold;">
-                                    <td colspan="4" style="padding: 8px; border: 1px solid #ddd; text-align: right;">${currentReport === 'IN' ? 'ලැබීම් මුළු එකතුව:' : 'ගෙවීම් මුළු එකතුව:'}</td>
-                                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right; color: ${currentReport === 'IN' ? 'green' : 'red'};">${codeTotal > 0 ? codeTotal.toLocaleString(undefined, {minimumFractionDigits: 2}) : ' - '}</td>
-                                </tr>
-                                ${currentReport === 'IN' ? `
-                                <tr style="background: #d4edda; font-weight: bold; border-top: 2px solid #28a745;">
-                                    <td colspan="4" style="padding: 8px; border: 1px solid #ddd; text-align: right;">මුළු එකතුව (ආරම්භක + ලැබීම්):</td>
-                                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right; color: #1b5e20; font-size: 16px;"> ${codeGrandTotal > 0 ? codeGrandTotal.toLocaleString(undefined, {minimumFractionDigits: 2}) : ' - '}</td>
-                                </tr>` : ''}
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>`;
+            if (from) { 
+                db.filter(r => !r.isOp && r.date < from).forEach(r => bal += (r.type === 'IN' ? r.amt : -r.amt)); 
             }
-        });
-    }
-    
-    document.getElementById('report-content').innerHTML = html;
-}
+
+            html = `<table><thead><tr>
+                        <th>දිනය</th>
+                        <th>විස්තරය</th>
+                        <th>ලදුපත්/වවුචර්</th>
+                        <th>චෙක්පත් අංකය</th>
+                        <th>ලැබීම් (+)</th>
+                        <th>ගෙවීම් (-)</th>
+                        <th>ශේෂය</th>
+                    </tr></thead>
+                    <tbody>
+                    <tr style="background:#f0f0f0; font-weight:bold;">
+                        <td colspan="6" style="text-align:right">ආරම්භක ශේෂය:</td>
+                        <td style="text-align:right"> ${bal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                    </tr>`;
+
+            filtered.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(r => {
+                bal += (r.type === 'IN' ? r.amt : -r.amt);
+                
+                html += `<tr>
+                            <td>${r.date ? r.date.split('T')[0] : ''}</td>
+                            <td>${r.desc}</td>
+                            <td>${r.type === 'IN' ? (r.ref || '-') : (r.vouch || '-')}</td>
+                            <td>${r.type === 'EX' ? (r.ref || '-') : '-'}</td>
+                            <td style="text-align:right; color:green;">${r.type === 'IN' ? (r.amt > 0 ? r.amt.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-') : '-'}</td>
+                            <td style="text-align:right; color:red;">${r.type === 'EX' ? (r.amt > 0 ? r.amt.toLocaleString(undefined, {minimumFractionDigits: 2}) : '-') : '-'}</td>
+                            <td style="text-align:right; font-weight:bold">${bal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                        </tr>`;
+            });
+            html += '</tbody></table>';
+            document.getElementById('report-content').innerHTML = html;
+        }
+        else if(currentReport === 'IN' || currentReport === 'EX') {
+            document.getElementById('report-header-title').innerText = 
+                (currentReport === 'IN' ? "ලැබීම් විශ්ලේෂණ වාර්තාව" : "ගෙවීම් විශ්ලේෂණ වාර්තාව") + 
+                (selectedCode !== 'ALL' ? ` - ${selectedCode}` : "");
+     
+            const codes = (selectedCode === 'ALL') ? 
+                (currentReport === 'IN' ? S_CODES : EX_CODES) : 
+                [selectedCode];
+     
+            const openingBalances = {};
+            codes.forEach(code => {
+                const openingAmt = db.filter(r => r.isOp && r.source === code)
+                    .reduce((sum, r) => sum + r.amt, 0);
+                openingBalances[code] = openingAmt;
+            });
+          
+            html += `
+            <table style="width: 100%; border-collapse: collapse; border: 2px solid ${currentReport === 'IN' ? '#28a745' : '#dc3545'}; margin-bottom: 30px;">
+                <thead>
+                    <tr style="background: ${currentReport === 'IN' ? '#28a745' : '#dc3545'}; color: white;">
+                        <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">කේතය</th>
+                        <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">විස්තරය</th>
+                        ${currentReport === 'IN' ? '<th style="padding: 12px; border: 1px solid #ddd; text-align: right;">ආරම්භක ශේෂය (රු.)</th>' : ''}
+                        <th style="padding: 12px; border: 1px solid #ddd; text-align: center;">ගනුදෙනු ගණන</th>
+                        <th style="padding: 12px; border: 1px solid #ddd; text-align: right;">මුළු ${currentReport === 'IN' ? 'ලැබීම්' : 'ගෙවීම්'} (රු.)</th>
+                        ${currentReport === 'IN' ? '<th style="padding: 12px; border: 1px solid #ddd; text-align: right;">මුළු එකතුව (රු.)</th>' : ''}
+                        <th style="padding: 12px; border: 1px solid #ddd; text-align: center;">ක්‍රියා</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            let grandTotal = 0;
+            let totalTransactions = 0;
+            let totalOpening = 0;
+            
+            codes.forEach(code => {
+                const transactions = db.filter(r => 
+                    r.type === currentReport && 
+                    r.code === code && 
+                    (!from || r.date >= from) && 
+                    (!to || r.date <= to)
+                );
+                
+                const codeTotal = transactions.reduce((sum, t) => sum + t.amt, 0);
+                const transactionCount = transactions.length;
+                const openingAmt = openingBalances[code] || 0;
+                const grandTotalForCode = currentReport === 'IN' ? (openingAmt + codeTotal) : codeTotal;
+                
+                grandTotal += currentReport === 'IN' ? grandTotalForCode : codeTotal;
+                totalTransactions += transactionCount;
+                totalOpening += openingAmt;
+                
+                html += `
+                <tr style="border-bottom: 1px solid #eee; ${transactionCount > 0 ? 'background: #f9f9f9;' : ''}">
+                    <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold; color: var(--primary);">${code}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${CODE_INFO[code]}</td>
+                    ${currentReport === 'IN' ? 
+                        `<td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #006400; font-weight: bold;">
+                            ${openingAmt > 0 ? openingAmt.toLocaleString(undefined, {minimumFractionDigits: 2}) : ' - '}
+                        </td>` : ''}
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
+                        <span style="display: inline-block; background: ${transactionCount > 0 ? (currentReport === 'IN' ? '#28a745' : '#dc3545') : '#6c757d'}; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px;">
+                            ${transactionCount}
+                        </span>
+                    </td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right; font-weight: bold; color: ${currentReport === 'IN' ? 'green' : 'red'};">${codeTotal > 0 ? codeTotal.toLocaleString(undefined, {minimumFractionDigits: 2}) : ' - '}</td>
+                    ${currentReport === 'IN' ? 
+                        `<td style="padding: 10px; border: 1px solid #ddd; text-align: right; font-weight: bold; color: #1b5e20; background: #e8f5e9;">
+                            ${grandTotalForCode > 0 ? grandTotalForCode.toLocaleString(undefined, {minimumFractionDigits: 2}) : ' - '}
+                        </td>` : ''}
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
+                        <button onclick="viewCodeDetails('${code}', '${currentReport}')" 
+                            style="background: ${currentReport === 'IN' ? 'var(--success)' : 'var(--danger)'}; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 auto; height: 36px; min-width: 100px; transition: all 0.3s;"
+                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 3px 10px rgba(0,0,0,0.15)'"
+                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                            <span>🔍</span> විස්තර
+                        </button>
+                    </td>
+                </tr>`;
+            });
+            
+            const colspan = currentReport === 'IN' ? 2 : 2;
+            const totalColspan = currentReport === 'IN' ? 3 : 2;
+            
+            html += `
+                </tbody>
+                <tfoot>
+                    <tr style="background: ${currentReport === 'IN' ? '#d4edda' : '#f8d7da'}; font-weight: bold;">
+                        <td colspan="${colspan}" style="padding: 12px; border: 1px solid #ddd; text-align: right;">මුළු එකතුව:</td>
+                        ${currentReport === 'IN' ? 
+                            `<td style="padding: 12px; border: 1px solid #ddd; text-align: right; color: #006400;">
+                                 ${totalOpening > 0 ? totalOpening.toLocaleString(undefined, {minimumFractionDigits: 2}) : ' - '}
+                            </td>` : ''}
+                        <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">
+                            <span style="display: inline-block; background: #343a40; color: white; padding: 4px 10px; border-radius: 12px;">
+                                ${totalTransactions}
+                            </span>
+                        </td>
+                        <td style="padding: 12px; border: 1px solid #ddd; text-align: right; color: ${currentReport === 'IN' ? 'green' : 'red'};">
+                             ${(grandTotal - (currentReport === 'IN' ? totalOpening : 0)) > 0 ? (grandTotal - (currentReport === 'IN' ? totalOpening : 0)).toLocaleString(undefined, {minimumFractionDigits: 2}) : ' - '}
+                        </td>
+                        ${currentReport === 'IN' ? 
+                            `<td style="padding: 12px; border: 1px solid #ddd; text-align: right; color: #1b5e20; font-size: 18px; background: #c8e6c9;">
+                                 ${grandTotal > 0 ? grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2}) : ' - '}
+                            </td>` : ''}
+                        <td style="padding: 12px; border: 1px solid #ddd;"></td>
+                    </tr>
+                </tfoot>
+            </table>`;
+            
+            if (selectedCode === 'ALL') {
+                html += `<h3 style="color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 30px;">කේත අනුව විස්තරාත්මක වාර්තා</h3>`;
+                
+                codes.forEach(code => {
+                    const transactions = db.filter(r => 
+                        r.type === currentReport && 
+                        r.code === code && 
+                        (!from || r.date >= from) && 
+                        (!to || r.date <= to)
+                    );
+                    
+                    if (transactions.length > 0) {
+                        const codeTotal = transactions.reduce((sum, t) => sum + t.amt, 0);
+                        const openingAmt = openingBalances[code] || 0;
+                        const codeGrandTotal = currentReport === 'IN' ? (openingAmt + codeTotal) : codeTotal;
+                        
+                        html += `
+                        <div style="margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+                            <div style="background: ${currentReport === 'IN' ? '#e8f5e9' : '#fdeaea'}; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
+                                <div>
+                                    <strong style="color: var(--primary);">${code}</strong> - ${CODE_INFO[code]}
+                                    <span style="margin-left: 15px; font-size: 12px; color: #666;">
+                                        ගනුදෙනු: ${transactions.length} | 
+                                        ${currentReport === 'IN' ? `ආරම්භක:  ${openingAmt > 0 ? openingAmt.toLocaleString(undefined, {minimumFractionDigits: 2}) : ' - '} | ` : ''}
+                                        ${currentReport === 'IN' ? 'ලැබීම්' : 'ගෙවීම්'}:  ${codeTotal > 0 ? codeTotal.toLocaleString(undefined, {minimumFractionDigits: 2}) : ' - '}
+                                        ${currentReport === 'IN' ? ` | මුළු:  ${codeGrandTotal > 0 ? codeGrandTotal.toLocaleString(undefined, {minimumFractionDigits: 2}) : ' - '}` : ''}
+                                    </span>
+                                </div>
+                                <span style="font-size: 18px;">▼</span>
+                            </div>
+                            <div style="padding: 15px; display: none;">
+                                ${currentReport === 'IN' && openingAmt > 0 ? `
+                                <div style="background: #e8f5e9; padding: 10px; border-radius: 5px; margin-bottom: 10px; border-left: 4px solid #28a745;">
+                                    <strong>ආරම්භක ශේෂය:</strong>  ${openingAmt.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                                </div>` : ''}
+                                
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr style="background: ${currentReport === 'IN' ? '#c8e6c9' : '#f5c6cb'};">
+                                            <th style="padding: 8px; border: 1px solid #ddd;">දිනය</th>
+                                            <th style="padding: 8px; border: 1px solid #ddd;">විස්තරය</th>
+                                            <th style="padding: 8px; border: 1px solid #ddd;">${currentReport === 'IN' ? 'ලදුපත් අංකය' : 'වවුචර් අංකය'}</th>
+                                            <th style="padding: 8px; border: 1px solid #ddd;">ව්‍යාපෘතිය</th>
+                                            <th style="padding: 8px; border: 1px solid #ddd; text-align: right;">මුදල (රු.)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>`;
+                        
+                        transactions.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(tr => {
+                            html += `
+                                <tr style="border-bottom: 1px solid #eee;">
+                                    <td style="padding: 8px; border: 1px solid #ddd;">${tr.date}</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">${tr.desc}</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">${currentReport === 'IN' ? tr.ref : (tr.vouch || tr.ref)}</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">${tr.proj || '-'}</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right; font-weight: bold; color: ${currentReport === 'IN' ? 'green' : 'red'};">${tr.amt.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                                </tr>`;
+                        });
+                        
+                        html += `
+                                    </tbody>
+                                    <tfoot>
+                                        <tr style="background: ${currentReport === 'IN' ? '#a5d6a7' : '#f1b0b7'}; font-weight: bold;">
+                                            <td colspan="4" style="padding: 8px; border: 1px solid #ddd; text-align: right;">${currentReport === 'IN' ? 'ලැබීම් මුළු එකතුව:' : 'ගෙවීම් මුළු එකතුව:'}</td>
+                                            <td style="padding: 8px; border: 1px solid #ddd; text-align: right; color: ${currentReport === 'IN' ? 'green' : 'red'};">${codeTotal > 0 ? codeTotal.toLocaleString(undefined, {minimumFractionDigits: 2}) : ' - '}</td>
+                                        </tr>
+                                        ${currentReport === 'IN' ? `
+                                        <tr style="background: #d4edda; font-weight: bold; border-top: 2px solid #28a745;">
+                                            <td colspan="4" style="padding: 8px; border: 1px solid #ddd; text-align: right;">මුළු එකතුව (ආරම්භක + ලැබීම්):</td>
+                                            <td style="padding: 8px; border: 1px solid #ddd; text-align: right; color: #1b5e20; font-size: 16px;"> ${codeGrandTotal > 0 ? codeGrandTotal.toLocaleString(undefined, {minimumFractionDigits: 2}) : ' - '}</td>
+                                        </tr>` : ''}
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>`;
+                    }
+                });
+            }
+            
+            document.getElementById('report-content').innerHTML = html;
+        }
         else if(currentReport === 'BANK') {
             document.getElementById('report-header-title').innerText = "බැංකු සැසඳුම් ප්‍රකාශය";
             let bankStmtBal = parseAmount(document.getElementById('bankStmtInput').value || 0);
@@ -1204,42 +1338,53 @@ else if(currentReport === 'IN' || currentReport === 'EX') {
 
     function updateClearedStatus(id, val) {
         clearedStatus[id] = val;
-        localStorage.setItem('sch_cleared', JSON.stringify(clearedStatus));
+        sessionStorage.setItem('sch_cleared', JSON.stringify(clearedStatus));
         generateReport();
     }
 
     async function refreshDashboard() {
-    const db = getData();
-    const tin = db.filter(r => r.type === 'IN').reduce((a,b) => a + b.amt, 0);
-    const tex = db.filter(r => r.type === 'EX').reduce((a,b) => a + b.amt, 0);
-	document.getElementById('dash-in').innerText = tin.toLocaleString(undefined, {minimumFractionDigits:2});
-	document.getElementById('dash-ex').innerText = tex.toLocaleString(undefined, {minimumFractionDigits:2});
-	document.getElementById('dash-bal').innerText = (tin-tex).toLocaleString(undefined, {minimumFractionDigits:2});
-    let fundHtml = '';
-    S_CODES.forEach((s, i) => {
-        const bal = db.filter(r => r.source === s).reduce((a,b) => a + (b.type==='IN'?b.amt:-b.amt), 0);
+        const db = getData();
+        const tin = db.filter(r => r.type === 'IN').reduce((a,b) => a + b.amt, 0);
+        const tex = db.filter(r => r.type === 'EX').reduce((a,b) => a + b.amt, 0);
         
-        const balanceText = bal.toLocaleString(undefined, {
-            minimumFractionDigits: 2, 
-            maximumFractionDigits: 2
+        document.getElementById('dash-in').innerText = tin.toLocaleString(undefined, {minimumFractionDigits:2});
+        document.getElementById('dash-ex').innerText = tex.toLocaleString(undefined, {minimumFractionDigits:2});
+        document.getElementById('dash-bal').innerText = (tin-tex).toLocaleString(undefined, {minimumFractionDigits:2});
+        
+        let fundHtml = '';
+        
+        S_CODES.forEach((s, i) => {
+            const bal = db.filter(r => r.source === s).reduce((a,b) => a + (b.type==='IN'?b.amt:-b.amt), 0);
+            
+            const balanceText = bal.toLocaleString(undefined, {
+                minimumFractionDigits: 2, 
+                maximumFractionDigits: 2
+            });
+            
+            fundHtml += `
+                <div class="fund-box" style="background:${COLORS[i]}; position:relative;">
+                    <span class="fund-index">${i+1}</span>
+                    <div class="fund-code">
+                        ${s}
+                    </div>
+                    <div class="fund-amount ${bal >= 0 ? 'positive' : 'negative'}">
+                        ${balanceText}
+                    </div>
+                    <div class="fund-description">
+                        ${CODE_INFO[s]}
+                    </div>
+                </div>`;
         });
         
-        fundHtml += `
-            <div class="fund-box" style="background:${COLORS[i%COLORS.length]}">
-                <div>${s}</div>
-                <div style="font-size:18px; font-weight:bold;">${balanceText}</div>
-                <small>${CODE_INFO[s]}</small>
-            </div>`;
-    });
-    document.getElementById('dash-funds').innerHTML = fundHtml;
-}
+        document.getElementById('dash-funds').innerHTML = fundHtml;
+    }
 
     async function loadRecentTable() {
         const db = await getData();
-        let html = '<table><tr><th>දිනය</th><th>විස්තරය</th><th>වවුචර්/ලදුපත්</th><th>මුදල (රු.)</th><th>Sync</th><th>ක්‍රියා</th></tr>';
+        let html = '<table><tr><th>දිනය</th><th>විස්තරය</th><th>වවුචර්/ලදුපත්</th><th>මුදල (රු.)</th><th>Status</th><th>ක්‍රියා</th></tr>';
         
         db.sort((a,b) => b.id - a.id).slice(0,5).forEach(r => {
-            const syncStatus = r.synced ? '<span class="sync-done">✅ Synced</span>' : '<span class="sync-pending">⏳ Pending</span>';
+            const syncStatus = r.offline ? '<span class="sync-pending">⏳ Offline</span>' : '<span class="sync-done">✅ Online</span>';
             
             let actions = [];
             if(userRole === 'ADMIN' || userRole === 'STAFF') {
@@ -1272,6 +1417,8 @@ else if(currentReport === 'IN' || currentReport === 'EX') {
             await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({action:'saveProject', projectName:name, est:est}) }); 
             showToast("✅ ව්‍යාපෘතිය සුරැකිණි!"); 
             await fetchRemoteProjects(); 
+            updateProjectSelects();
+            renderProjectList();
         } catch(e) {
             showToast("❌ දෝෂයක් ඇතිවිය!");
         }
@@ -1315,9 +1462,9 @@ else if(currentReport === 'IN' || currentReport === 'EX') {
         toggleLoading(true);
         try {
             const response = await fetch(SCRIPT_URL + "?action=delete&id=" + id);
-            let localDB = JSON.parse(localStorage.getItem('sch_db') || '[]');
+            let localDB = JSON.parse(sessionStorage.getItem('sch_db') || '[]');
             localDB = localDB.filter(item => item.id !== id);
-            localStorage.setItem('sch_db', JSON.stringify(localDB));
+            sessionStorage.setItem('sch_db', JSON.stringify(localDB));
             loadRecentTable();
             refreshDashboard();
             showToast("✅ දත්ත සාර්ථකව මකා දැමුවා!");
@@ -1337,41 +1484,24 @@ else if(currentReport === 'IN' || currentReport === 'EX') {
         if(id === 'entry') loadRecentTable();
         if(id === 'proj') renderProjectList();
         if(id === 'dash') refreshDashboard();
-    }
-
-    async function manualRefresh() { 
-        toggleLoading(true);
-        await fetchRemoteData(); 
-        await fetchRemoteProjects(); 
-        refreshDashboard(); 
-        toggleLoading(false);
-        showToast("✅ දත්ත අලුත් කරන ලදී!"); 
+        if(id === 'codes') renderCodesList();
     }
 
     function resetForms() {
-    // සියලුම edit ID ක්ෂේත්‍ර හිස් කරන්න
-    document.getElementById('edit-id-in').value = '';
-    document.getElementById('edit-id-ex').value = '';
-    
-    // පෝරම ප්‍රධාන ක්ෂේත්‍ර හිස් කරන්න
-    document.querySelectorAll('input:not([type="hidden"]):not([type="date"]), textarea').forEach(i => i.value = '');
-    
-    // දිනයන් නැවත සකසන්න
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('inDate').value = today; 
-    document.getElementById('exDate').value = today;
-    
-    // තේරීම් ක්ෂේත්‍ර නැවත සකසන්න
-    document.getElementById('inCodeSelect').selectedIndex = 0;
-    document.getElementById('exCodeSelect').selectedIndex = 0;
-    document.getElementById('exSourceSelect').selectedIndex = 0;
-    document.getElementById('inProjSelect').selectedIndex = 0;
-    document.getElementById('exProjSelect').selectedIndex = 0;
- 
-    // බොත්තම් පෙළ නැවත සකසන්න
-    document.getElementById('btn-save-in').innerText = "ලැබීම ගිණුම්ගත කරන්න";
-    document.getElementById('btn-save-ex').innerText = "ගෙවීම ගිණුම්ගත කරන්න";
-}
+        document.getElementById('edit-id-in').value = '';
+        document.getElementById('edit-id-ex').value = '';
+        ['inRef', 'inAmt', 'inDesc', 'exVoucher', 'exRef', 'exAmt', 'exDesc'].forEach(id => {
+            if (document.getElementById(id)) {
+                document.getElementById(id).value = '';
+            }
+        });
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('inDate').value = today; 
+        document.getElementById('exDate').value = today;
+        $('#inCodeSelect, #exCodeSelect, #exSourceSelect, #inProjSelect, #exProjSelect').val('').trigger('change');
+        document.getElementById('btn-save-in').innerText = "ලැබීම ගිණුම්ගත කරන්න";
+        document.getElementById('btn-save-ex').innerText = "ගෙවීම ගිණුම්ගත කරන්න";
+    }
 
     function downloadBackupJSON() {
         const db = getData();
@@ -1384,41 +1514,53 @@ else if(currentReport === 'IN' || currentReport === 'EX') {
     }
 
     function downloadBackupCSV() {
-        const db = getData();
-        let csv = 'දිනය,විස්තරය,ලදුපත්/වවුචර්,මුදල,වර්ගය,කේතය,ව්‍යාපෘතිය\n' + 
-                 db.map(r => `${r.date},"${r.desc}",${r.ref || r.vouch},${r.amt},${r.type},${r.code},"${r.proj || ''}"`).join('\n');
-        const blob = new Blob([csv], {type: 'text/csv;charset=utf-8'});
-        const a = document.createElement('a'); 
-        a.href = URL.createObjectURL(blob); 
-        a.download = 'data.csv'; 
-        a.click();
-        showToast("✅ CSV ගොනුව බාගත කරන ලදී!");
+    try {
+        const db = getData(); // getData() ශ්‍රිතය භාවිතා කරන්න
+        if (db.length === 0) {
+            showToast("⚠️ බාගත කිරීමට දත්ත කිසිවක් නැත!");
+            return;
+        }
+        let csvContent = "ID,දිනය,වර්ගය,කේතය,මූලාශ්‍ර,මුදල,විස්තරය,වවුචර්,ලදුපත්,ව්‍යාපෘතිය,Status\n";
+
+        db.forEach(t => {
+            const row = [
+                t.id,
+                t.date,
+                t.type,
+                t.code,
+                t.source || '',
+                t.amt,
+                `"${t.desc.replace(/"/g, '""')}"`,
+                t.vouch || '',
+                t.ref || '',
+                t.proj || '',
+                t.offline ? 'Offline' : 'Online'
+            ].join(",");
+            csvContent += row + "\n";
+        });
+
+        const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        
+        link.setAttribute("href", url);
+        link.setAttribute("download", `පාසල්_ගිණුම්_දත්ත_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        showToast("✅ CSV දත්ත පිටපත බාගත කරන ලදී!");
+    } catch (error) {
+        console.error("CSV Download Error:", error);
+        showToast("❌ දත්ත බාගත කිරීමේදී දෝෂයක් සිදු විය!");
     }
+}
 
     function showToast(msg) {
         const t = document.getElementById('toast');
         t.innerText = msg;
         t.style.display = 'block';
-        setTimeout(() => { t.style.display = 'none'; }, 3000);
-    }
-
-    async function syncOfflineData() {
-        if (!navigator.onLine) return;
-        let db = getData();
-        let unSynced = db.filter(r => !r.synced);
-        
-        for (let item of unSynced) {
-            try {
-                await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', 
-                    body: JSON.stringify(item)
-                });
-                item.synced = true; 
-            } catch (e) { console.error(e); }
-        }
-        localStorage.setItem('sch_db', JSON.stringify(db));
-        loadRecentTable();
+        setTimeout(() => { t.style.display = 'none'; }, 6000);
     }
 
     // PDF Export Function
