@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>ගිණුම්කරණ පද්ධතිය - මො/ගම්පංගුව කනිෂ්ඨ විද්‍යාලය</title>
     
     <!-- External Libraries -->
@@ -68,10 +69,31 @@
         <a class="nav-link" id="nav-quarter" onclick="openReport('QUARTER')"><i class="fas fa-calendar-alt"></i>  සිව්මස් වාර්තාව</a>
         <a class="nav-link" id="nav-bank" onclick="openReport('BANK')"><i class="fas fa-university"></i>  බැංකු සැසඳුම ප්‍රකාශය</a>
         <a class="nav-link staff-only" id="nav-proj" onclick="showSec('proj')"><i class="fas fa-project-diagram"></i>  ව්‍යාපෘති කළමනාකරණය</a>
-        <a class="nav-link" id="nav-variance" onclick="openReport('VARIANCE')"><i class="fas fa-balance-scale"></i>  අයවැය සැසඳුම</a>
-        <a class="nav-link" id="nav-codes" onclick="showSec('codes')"><i class="fas fa-file-alt"></i>  ගිණුම් කේත විස්තරය</a>
-        <a class="nav-link" onclick="manualRefresh()" style="background: var(--deep-blue); color: white; margin-top: 10px; border-left: 5px solid var(--gold); display: flex; align-items: center; justify-content: center; padding: 5px 20px; border-radius: 10px; cursor: pointer; transition: all 0.3s;">
-            <i class="fas fa-sync-alt"></i>    දත්ත අලුත් කරන්න
+      <!-- නව මෙනු අයිතමය මෙහි එකතු කරන්න -->
+		<a class="nav-link" id="nav-variance" onclick="openReport('VARIANCE')">
+		<i class="fas fa-balance-scale"></i> අයවැය සැසඳුම
+		</a>
+<!-- මෙය එකතු කරන්න -->
+<a class="nav-link" id="nav-codes" onclick="showSec('codes')">
+    <i class="fas fa-file-alt"></i> ගිණුම් කේත විස්තරය
+</a>
+        <a class="nav-link" onclick="manualRefresh()" style="
+    background: var(--deep-blue); 
+    color: white; 
+    margin-top: 10px; 
+    border-left: 5px solid var(--gold); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    padding: 8px 25px; 
+    border-radius: 10px; 
+    cursor: pointer; 
+    transition: all 0.3s;
+    gap: 15px; /* අකුරු සහ සිංබල් අතර දුර */
+">
+    <i class="fas fa-sync-alt" style="font-size: 14px;"></i>
+    <span style="font-size: 14px; font-weight: bold;">දත්ත අලුත් කරන්න</span>
+</a>
         </a>
         
        <div style="margin-top: 10px; border-top: 2px solid var(--gold); padding: 10px 5px;">
@@ -156,10 +178,11 @@
             </div>
         </div>
         <div class="card" style="background: #fff; border-top: 4px solid var(--accent);">
-            <h3 style="text-align: center; color: var(--primary); margin-bottom: 25px;">අරමුදල් අනුව වත්මන් ශේෂයන්</h3>
-            <div class="fund-grid" id="dash-funds"></div>
-        </div>
-    </div>
+    <h3 style="text-align: center; color: var(--primary); margin-bottom: 15px; font-size: 18px; font-weight: 900; padding-bottom: 10px; border-bottom: 1px solid #eee;">
+        අරමුදල් අනුව වත්මන් ශේෂයන්
+    </h3>
+    <div class="fund-grid" id="dash-funds"></div>
+</div>
 
     <div id="sec-entry" class="section" style="display:none;">
         <h2 class="section-title">නව ගනුදෙනු ඇතුළත් කිරීම</h2>
@@ -237,21 +260,23 @@
             <div id="recent-transactions-table" style="margin-top: 20px;"></div>
         </div>
     </div>
-
-    <div id="sec-codes" class="section" style="display:none;">
-        <h2 class="section-title">ගිණුම් කේත සහ විස්තර</h2>
-        <div class="form-row">
-            <div class="card field" style="border-top: 5px solid var(--primary);">
-                <h3 style="color:var(--primary);"><i class="fas fa-money-check-alt"></i> ලැබීම් කේත (S Codes)</h3>
-                <div id="codes-s" class="code-tag-container"></div>
-            </div>
-            <div class="card field" style="border-top: 5px solid var(--danger);">
-                <h3 style="color:var(--danger);"><i class="fas fa-money-bill-wave"></i> ගෙවීම් කේත ( REx / CEx Codes)</h3>
-                <div id="codes-ex" class="code-tag-container"></div>
-            </div>
+<div id="sec-codes" class="section" style="display:none;">
+    <h2 class="section-title">ගිණුම් කේත සහ විස්තර</h2>
+    <div class="form-row">
+        <div class="card field" style="border-top: 5px solid var(--primary);">
+            <h3 style="color:var(--primary);">
+                <i class="fas fa-money-check-alt"></i> ලැබීම් කේත (S Codes)
+            </h3>
+            <div id="codes-s" class="code-tag-container"></div>
+        </div>
+        <div class="card field" style="border-top: 5px solid var(--danger);">
+            <h3 style="color:var(--danger);">
+                <i class="fas fa-money-bill-wave"></i> ගෙවීම් කේත (REx / CEx Codes)
+            </h3>
+            <div id="codes-ex" class="code-tag-container"></div>
         </div>
     </div>
-
+</div>
     <div id="sec-proj" class="section" style="display:none;">
         <h2 class="section-title">ව්‍යාපෘති කළමනාකරණය</h2>
         <div class="card">
@@ -274,21 +299,22 @@
         </div>
     </div>
 
-    <span class="footer-credit no-print" style="
+  <span class="footer-credit no-print" style="
     display: flex;
     flex-direction: row;
     justify-content: center;
     align-items: center;
     gap: 15px;
     color: #999;
-    padding: 30px;
+    padding: 20px;
     background: linear-gradient(135deg, rgba(27, 94, 32, 0.05) 0%, rgba(46, 125, 50, 0.05) 100%);
-    border-radius: 15px;
+    border-radius: 25px;
     margin: 20px;
     flex-wrap: wrap;
     border: 1px solid rgba(27, 94, 32, 0.1);
+    font-size: 12px; /* මෙය එක් කරන්න */
 ">
-    <span style="font-weight: 500;">පද්ධති නිර්මාණය හා කළමනාකරණ :</span>
+    <span style="font-weight: 900;">පද්ධති නිර්මාණය හා කළමනාකරණ :</span>
     <a href="https://wa.me/94777944308?text=පද්ධතිය පිළිබඳ විමසීමක්" 
        style="color: var(--primary); text-decoration: none; font-weight: bold; padding: 5px 15px; background: rgba(27, 94, 32, 0.1); border-radius: 8px;">
        තරංග විජේසිංහ
