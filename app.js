@@ -16,157 +16,17 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzaVBE_NqOMUS8wQtDWW
     let initialized = false;
     let isLoading = false;
 
-   $(document).ready(function() {
-    updateOnlineStatus();
-    populateOptions();
-    initializeSelect2();
-    renderCodesList(); // මෙය එකතු කරන්න
-    
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('inDate').value = today;
-    document.getElementById('exDate').value = today;
-    document.getElementById('repFrom').value = new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0];
-    document.getElementById('repTo').value = today;
-});
-// උපකරණයේ ප්‍රමාණය අනුව ස්වයංක්‍රීයව සකස් කිරීම
-function adjustLayoutForScreenSize() {
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
-    
-    // Mobile devices
-    if (screenWidth <= 576) {
-        document.body.classList.add('mobile-view');
-        document.body.classList.remove('tablet-view', 'desktop-view');
-        
-        // Mobile සඳහා විශේෂ සැකසුම්
-        adjustForMobile();
-    } 
-    // Tablet devices
-    else if (screenWidth <= 768) {
-        document.body.classList.add('tablet-view');
-        document.body.classList.remove('mobile-view', 'desktop-view');
-        
-        // Tablet සඳහා විශේෂ සැකසුම්
-        adjustForTablet();
-    } 
-    // Desktop devices
-    else {
-        document.body.classList.add('desktop-view');
-        document.body.classList.remove('mobile-view', 'tablet-view');
-    }
-    
-    // Display size අනුව font size සකස් කිරීම
-    adjustFontSizeBasedOnScreen(screenWidth);
-}
-
-function adjustForMobile() {
-    // Mobile සඳහා විශේෂ සැකසුම්
-    const sidebar = document.querySelector('.sidebar');
-    const mainContent = document.querySelector('.main-content');
-    
-    if (sidebar && mainContent) {
-        sidebar.style.width = '100%';
-        sidebar.style.position = 'relative';
-        sidebar.style.height = 'auto';
-        mainContent.style.marginLeft = '0';
-        mainContent.style.width = '100%';
-        mainContent.style.padding = '15px';
-    }
-    
-    // Fund boxes mobile සඳහා
-    const fundGrid = document.getElementById('dash-funds');
-    if (fundGrid) {
-        fundGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(140px, 1fr))';
-        fundGrid.style.gap = '10px';
-    }
-}
-
-function adjustForTablet() {
-    // Tablet සඳහා විශේෂ සැකසුම්
-    const sidebar = document.querySelector('.sidebar');
-    const mainContent = document.querySelector('.main-content');
-    
-    if (sidebar && mainContent) {
-        sidebar.style.width = '220px';
-        sidebar.style.position = 'fixed';
-        mainContent.style.marginLeft = '220px';
-        mainContent.style.width = 'calc(100% - 220px)';
-    }
-}
-
-function adjustFontSizeBasedOnScreen(screenWidth) {
-    // Base font size ගණනය කිරීම
-    const baseSize = Math.max(10, Math.min(16, screenWidth / 75));
-    document.documentElement.style.fontSize = `${baseSize}px`;
-    
-    // Fund boxes වල font size සකස් කිරීම
-    const fundBoxes = document.querySelectorAll('.fund-box');
-    fundBoxes.forEach(box => {
-        const boxWidth = box.offsetWidth;
-        if (boxWidth < 150) {
-            box.style.fontSize = '9px';
-            box.querySelector('.fund-code').style.fontSize = '12px';
-            box.querySelector('.fund-amount').style.fontSize = '16px';
-        } else if (boxWidth < 200) {
-            box.style.fontSize = '10px';
-            box.querySelector('.fund-code').style.fontSize = '14px';
-            box.querySelector('.fund-amount').style.fontSize = '18px';
-        } else {
-            box.style.fontSize = '12px';
-            box.querySelector('.fund-code').style.fontSize = '16px';
-            box.querySelector('.fund-amount').style.fontSize = '22px';
-        }
+    $(document).ready(function() {
+        updateOnlineStatus();
+        populateOptions();
+        initializeSelect2();
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('inDate').value = today;
+        document.getElementById('exDate').value = today;
+        document.getElementById('repFrom').value = new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0];
+        document.getElementById('repTo').value = today;
     });
-}
 
-// පිටුව load වන විට හා window resize වන විට ක්‍රියාත්මක කිරීම
-window.addEventListener('load', adjustLayoutForScreenSize);
-window.addEventListener('resize', adjustLayoutForScreenSize);
-window.addEventListener('orientationchange', adjustLayoutForScreenSize);
-	function adjustFontSizeBasedOnScreen(screenWidth) {
-    // ලැප්ටොප් තිර අනුව අකුරු ප්‍රමාණය සකස් කරයි
-		const baseSize = Math.max(10, Math.min(16, screenWidth / 75));
-    document.documentElement.style.fontSize = `${baseSize}px`;
-}
-// 2-in-1 ලැප්ටොප්/ටැබ්ලට් සඳහා
-window.addEventListener('orientationchange', function() {
-    if (window.orientation === 90 || window.orientation === -90) {
-        // තිර භ්‍රමණය වූ විට (Landscape)
-        console.log("Landscape mode");
-    } else {
-        // සාමාන්‍ය මාදිලිය (Portrait)
-        console.log("Portrait mode");
-    }
-});
-// ටේබල් කොලම් ගණන තිර පළල අනුව සකස් කිරීම
-function adjustTableColumns() {
-    const screenWidth = window.innerWidth;
-    const table = document.getElementById('recent-transactions-table');
-    
-    if (screenWidth < 1400) {
-        // කුඩා තිර සඳහා අවශ්‍ය කොලම් පමණක් පෙන්වන්න
-        table.querySelectorAll('th:nth-child(4), td:nth-child(4)').forEach(el => {
-            el.style.display = 'none';
-        });
-    } else {
-        // විශාල තිර සඳහා සියලු කොලම් පෙන්වන්න
-        table.querySelectorAll('th, td').forEach(el => {
-            el.style.display = '';
-        });
-    }
-}
-// ඉහළ බාධකය තිර සඳහා වැඩි ගනුදෙනු පෙන්වන්න
-function adjustDataDisplay() {
-    const screenHeight = window.innerHeight;
-    
-    if (screenHeight > 900) {
-        // ඉහළ තිර සඳහා වැඩි පේළි පෙන්වන්න
-        document.getElementById('recent-transactions-table').style.maxHeight = '500px';
-    } else {
-        // කුඩා තිර සඳහා සීමිත පේළි
-        document.getElementById('recent-transactions-table').style.maxHeight = '300px';
-    }
-}
     function updateOnlineStatus() {
         const statusDiv = document.getElementById('connection-status');
         if (navigator.onLine) {
@@ -231,33 +91,58 @@ function adjustDataDisplay() {
         });
     }
 
-// app.js තුළ checkLogin() ශ්‍රිතයේ මෙම කොටස වෙනස් කරන්න
-async function checkLogin() {
-    // ... authentication ...
-    
-    // වහාම UI පෙන්වන්න (max 800ms න්)
-    setTimeout(() => {
-        document.getElementById('login-overlay').style.display = 'none';
-        showSec('dash');
-        applyPermissions();
+    async function checkLogin() {
+        const pass = document.getElementById('passInput').value;
+        if(pass === "MyApp") {
+            userRole = 'ADMIN';
+        } else if(pass === "gkvstaff") {
+            userRole = 'STAFF';
+        } else if(pass === "Guest") {
+            userRole = 'GUEST';
+        } else { 
+            alert("මුරපදය වැරදියි!"); 
+            return; 
+        }
+        showToast("🔄 පද්ධතියට ඇතුළු වෙමින්...");
+        document.getElementById('login-overlay').innerHTML = `
+            <div class="card" style="text-align:center; width: 380px; padding: 50px; background: white;">
+                <h2 style="color:var(--primary); margin-bottom: 10px;">මූල්‍ය කළමනාකරණ පද්ධතිය</h2>
+                <p style="color: #666; margin-bottom: 20px;">මො/ගම්පංගුව කනිෂ්ඨ විද්‍යාලය</p>
+                
+                <div style="margin: 30px 0;">
+                    <i class="fas fa-spinner fa-spin fa-3x" style="color: var(--primary);"></i>
+                </div>
+                
+                <h3 style="color: var(--primary);">දත්ත යාවත්කාලීන කරමින්...</h3>
+                <p style="color: #666; font-size: 14px;">කරුණාකර රැඳී සිටින්න</p>
+            </div>
+        `;
         
-        // Cached දත්ත පෙන්වන්න
-        const cachedData = JSON.parse(sessionStorage.getItem('sch_db') || '[]');
-        if (cachedData.length > 0) {
+        try {
+            await fetchRemoteData();
+            await fetchRemoteProjects();
             refreshDashboard();
             loadRecentTable();
+            renderCodesList();
+            updateProjectSelects();
+            renderProjectList();
+            updateOnlineStatus();
+            applyPermissions();
+            showToast("✅ පද්ධතියට සාර්ථකව ඇතුළු විය!");
+            
+        } catch (error) {
+            console.error("දත්ත යාවත්කාලීන දෝෂය:", error);
+            showToast("⚠️ දත්ත යාවත්කාලීන දෝෂයක්. නැවත උත්සාහ කරන්න.");
         }
-    }, 800);
-    
-    // Background එකේ දත්ත update කරන්න
-    fetchRemoteData().then(data => {
-        sessionStorage.setItem('sch_db', JSON.stringify(data));
-        refreshDashboard();
-        loadRecentTable();
-    }).catch(e => {
-        console.log("Using cached data");
-    });
-}
+        document.getElementById('login-overlay').style.display = 'none';
+        showSec('dash');
+        setTimeout(() => {
+            initializeSelect2();
+        }, 100);
+        
+        initialized = true;
+    }
+
     function applyPermissions() {
         if(userRole === 'ADMIN' || userRole === 'STAFF') {
             document.querySelectorAll('.staff-only').forEach(el => el.style.display = 'block');
@@ -1613,18 +1498,17 @@ function viewCodeDetails(code, type) {
         }
     }
 
-   function showSec(id) {
-    document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
-    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-    document.getElementById('sec-' + id).style.display = 'block';
-    document.getElementById('nav-' + id)?.classList.add('active');
-    
-    if(id === 'entry') loadRecentTable();
-    if(id === 'proj') renderProjectList();
-    if(id === 'dash') refreshDashboard();
-    // codes එකතු කරන්න
-    if(id === 'codes') renderCodesList();
-}
+    function showSec(id) {
+        document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        document.getElementById('sec-' + id).style.display = 'block';
+        document.getElementById('nav-' + id)?.classList.add('active');
+        if(id === 'entry') loadRecentTable();
+        if(id === 'proj') renderProjectList();
+        if(id === 'dash') refreshDashboard();
+        if(id === 'codes') renderCodesList();
+    }
+
     function resetForms() {
         document.getElementById('edit-id-in').value = '';
         document.getElementById('edit-id-ex').value = '';
