@@ -47,7 +47,7 @@ body {
 }
 
 .nav-link { 
-    padding: 18px 22px;
+    padding: 10px 16px;
     display: block; 
     color: #dcedc8; 
     text-decoration: none; 
@@ -1180,5 +1180,6 @@ input:focus {
 }
 
 .admin-only, .staff-only { display: none; }
+
 
 
