@@ -24,7 +24,7 @@ body {
 
 .sidebar { 
     width: 300px; 
-    height: 80vh; 
+    height: 100vh; 
     background: var(--primary); 
     color: white; 
     position: fixed; 
@@ -1180,4 +1180,5 @@ input:focus {
 }
 
 .admin-only, .staff-only { display: none; }
+
 
