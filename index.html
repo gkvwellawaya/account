@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+	<meta name="theme-color" content="#1b5e20">
     <title>ගිණුම්කරණ පද්ධතිය - මො/ගම්පංගුව කනිෂ්ඨ විද්‍යාලය</title>
     
     <!-- External Libraries -->
@@ -155,10 +157,42 @@
                 <h2 id="dash-bal">0.00</h2>
             </div>
         </div>
-        <div class="card" style="background: #fff; border-top: 4px solid var(--accent);">
-            <h3 style="text-align: center; color: var(--primary); margin-bottom: 25px;">අරමුදල් අනුව වත්මන් ශේෂයන්</h3>
-            <div class="fund-grid" id="dash-funds"></div>
-        </div>
+        <div class="card" style="
+    background: white;
+    border: 2px solid #e8f5e9;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+">
+    <h3 style="
+        text-align: center;
+        color: var(--primary);
+        margin-bottom: 25px;
+        font-size: 19px;
+        font-weight: 700;
+        position: relative;
+        padding-bottom: 15px;
+    ">
+        <span style="
+            position: relative;
+            padding: 0 15px;
+        ">
+            අරමුදල් අනුව වත්මන් ශේෂයන්
+            <span style="
+                position: absolute;
+                bottom: -5px;
+                left: 0;
+                right: 0;
+                height: 3px;
+                background: var(--accent);
+                border-radius: 2px;
+                transform: scaleX(0.5);
+            "></span>
+        </span>
+    </h3>
+    
+    <div class="fund-grid" id="dash-funds"></div>
+</div>
     </div>
 
     <div id="sec-entry" class="section" style="display:none;">
@@ -279,26 +313,41 @@
     flex-direction: row;
     justify-content: center;
     align-items: center;
-    gap: 15px;
+    gap: 10px;
     color: #999;
-    padding: 30px;
+    padding: 3px;
     background: linear-gradient(135deg, rgba(27, 94, 32, 0.05) 0%, rgba(46, 125, 50, 0.05) 100%);
     border-radius: 15px;
-    margin: 20px;
+    margin: 10px;
     flex-wrap: wrap;
     border: 1px solid rgba(27, 94, 32, 0.1);
 ">
+   <span class="footer-credit no-print" style="
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    color: #666;
+    padding: 6px 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    margin: 8px;
+    flex-wrap: wrap;
+    border: 1px solid #e9ecef;
+    font-size: 12px;
+    line-height: 1.2;
+">
     <span style="font-weight: 500;">පද්ධති නිර්මාණය හා කළමනාකරණ :</span>
     <a href="https://wa.me/94777944308?text=පද්ධතිය පිළිබඳ විමසීමක්" 
-       style="color: var(--primary); text-decoration: none; font-weight: bold; padding: 5px 15px; background: rgba(27, 94, 32, 0.1); border-radius: 8px;">
+       style="color: var(--primary); text-decoration: none; font-weight: bold; padding: 3px 10px; background: rgba(27, 94, 32, 0.08); border-radius: 4px; font-size: 12px;">
        තරංග විජේසිංහ
     </a>
-    <span style="color: #ccc;">|</span>
-    <a href="tel:+94777944308" style="color: var(--primary); text-decoration: none; padding: 5px 15px; background: rgba(46, 204, 113, 0.1); border-radius: 8px;">
+    <span style="color: #ddd;">|</span>
+    <a href="tel:+94777944308" style="color: var(--primary); text-decoration: none; padding: 3px 10px; background: rgba(46, 204, 113, 0.08); border-radius: 4px; font-size: 12px;">
         0777944308
     </a>
 </span>
-</div>
 
 <!-- External JavaScript Libraries -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
