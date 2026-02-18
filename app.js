@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw2HpmAHag9rTTRKjvWRfdMS3529GS9_jq1F9-V4mUH2OxjCVf98F8Bq8lCxPtYz5xrxg/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbySGBfCp-RT1RHja7HTB0VdzguXKFzLkbdutJ6wkAbOnReMDsQTXChQLFb4Ya_AkUuC/exec";
 
 const S_CODES = ["S1","S2","S3","S4","S5","S6","S7","S8","S9","S10"];
 const EX_CODES = ["REx1","REx2","REx3","REx4","REx5","REx6","REx7","CEx1","CEx2","CEx3","CEx4","CEx5","CEx6"];
@@ -497,13 +497,13 @@ function populateAdvancedSearchFilters() {
         sourceSelect.innerHTML = options;
     }
     
-    // ව්‍යාපෘති
+    // ව්‍යාපෘති - සියලුම ව්‍යාපෘති (අවසන් ඒවාත් ඇතුළුව)
     const projectSelect = document.getElementById('searchProject');
     if (projectSelect) {
-        const projs = getProjects();
+        const projs = getProjects(true);
         let options = '<option value="">සියල්ල</option>';
         projs.forEach(p => {
-            options += `<option value="${p.projectName}">${p.projectName}</option>`;
+            options += `<option value="${p.projectName}">${p.projectName} ${p.completed ? '(Completed)' : ''}</option>`;
         });
         projectSelect.innerHTML = options;
     }
@@ -900,7 +900,14 @@ async function fetchRemoteProjects() {
     try {
         const response = await fetch(SCRIPT_URL + "?action=read_projects&t=" + Date.now());
         const projects = await response.json();
-        sessionStorage.setItem('sch_projs', JSON.stringify(projects));
+        
+        // completed නැති project වලට default false දාන්න
+        const updatedProjects = projects.map(p => ({
+            ...p,
+            completed: p.completed || false
+        }));
+        
+        sessionStorage.setItem('sch_projs', JSON.stringify(updatedProjects));
     } catch (e) {
         console.error("Remote projects fetch error:", e);
     }
@@ -936,8 +943,19 @@ function getData() {
     return JSON.parse(sessionStorage.getItem('sch_db') || '[]'); 
 }
 
-function getProjects() { 
-    return JSON.parse(sessionStorage.getItem('sch_projs') || '[]'); 
+function getProjects(includeCompleted = true) {
+    let allProjects = JSON.parse(sessionStorage.getItem('sch_projs') || '[]');
+    
+    if (!includeCompleted) {
+        // අවසන් නොවූ ව්‍යාපෘති පමණක් (completed === false)
+        return allProjects.filter(p => !p.completed);
+    }
+    return allProjects;
+}
+
+function getCompletedProjects() {
+    let allProjects = JSON.parse(sessionStorage.getItem('sch_projs') || '[]');
+    return allProjects.filter(p => p.completed === true);
 }
 
 function populateOptions() {
@@ -2357,83 +2375,364 @@ async function saveProject() {
         return;
     }
     
-    const name = document.getElementById('projName').value, est = parseAmount(document.getElementById('projEst').value);
+    const name = document.getElementById('projName').value.trim();
+    const est = parseAmount(document.getElementById('projEst').value);
+    
     if(!name || !est) {
         showToast("⚠️ කරුණාකර ව්‍යාපෘතියේ නම සහ ඇස්තමේන්තුගත මුදල ඇතුළත් කරන්න");
         return;
     }
+    
     toggleLoading(true);
+    
     try { 
-        await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({action:'saveProject', projectName:name, est:est}) }); 
+        await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: 'saveProject',
+                projectName: name,
+                est: est,
+                completed: false
+            })
+        });
+        
         showToast("✅ ව්‍යාපෘතිය සුරැකිණි!"); 
         await fetchRemoteProjects(); 
         updateProjectSelects();
         renderProjectList();
     } catch(e) {
+        console.error("Save project error:", e);
         showToast("❌ දෝෂයක් ඇතිවිය!");
     }
-    toggleLoading(false);
     
+    toggleLoading(false);
     document.getElementById('projName').value = '';
     document.getElementById('projEst').value = '';
 }
 
-function renderProjectList() {
-    const projs = getProjects(), db = getData();
-    let html = '<table><tr><th>ව්‍යාපෘතිය</th><th>ඇස්තමේන්තුව</th><th>ආදායම</th><th>වියදම</th><th>ශේෂය</th></tr>';
-    projs.forEach(p => {
-        const pin = db.filter(r => r.proj === p.projectName && r.type === 'IN').reduce((a,b)=>a+b.amt,0);
-        const pex = db.filter(r => r.proj === p.projectName && r.type === 'EX').reduce((a,b)=>a+b.amt,0);
-        const projectBalance = (p.est + pin) - pex;
-        html += `<tr><td>${p.projectName}</td><td>${p.est > 0 ? p.est.toFixed(2) : ' - '}</td><td> ${pin > 0 ? pin.toFixed(2) : ' - '}</td><td>${pex > 0 ? pex.toFixed(2) : ' - '}</td><td><b>${(p.est + pin - pex) > 0 ? (p.est + pin - pex).toFixed(2) : ' - '}</b></td></tr>`;
-    });
-    document.getElementById('project-list-table').innerHTML = html + '</table>';
-}
-
-function updateProjectSelects() {
-    const projs = getProjects();
-    ['inProjSelect', 'exProjSelect'].forEach(id => {
-        const el = document.getElementById(id);
-        el.innerHTML = '<option value="">නොමැත</option>';
-        projs.forEach(p => el.innerHTML += `<option value="${p.projectName}">${p.projectName}</option>`);
-    });
-}
-
-async function deleteData(id) {
-    if(userRole === 'GUEST') {
-        showToast("❌ දත්ත මැකීමට ඔබට අවසර නැත.");
+async function completeProject(projectName) {
+    if (userRole !== 'ADMIN') {
+        showToast("❌ ව්‍යාපෘති අවසන් කිරීමට අවසර ඇත්තේ පරිපාලකට පමණි!");
         return;
     }
-    
-    if(userRole === 'STAFF') {
-        showToast("❌ මැකීමට පරිපාලක අවසරය අවශ්‍යයි.");
-        return;
-    }
-    
-    const result = await showConfirmDialog(
-        "🗑️ දත්ත මැකීම",
-        "ඔබට මෙම ගනුදෙනුව ස්ථිරවම මකා දැමීමට අවශ්‍යද?",
-        "ඔව්, මකන්න",
+
+    const confirm = await showConfirmDialog(
+        "🏁 ව්‍යාපෘතිය අවසන් කරන්න",
+        `"${projectName}" ව්‍යාපෘතිය අවසන් කර Complete ලෙස සලකුණු කරන්නද?\n\n⚠️ අවසන් කළ ව්‍යාපෘති තවදුරටත් dropdown එකේ නොපෙන්වයි.`,
+        "ඔව්, අවසන් කරන්න",
         "අවලංගු කරන්න"
     );
-    
-    if(!result) return;
-    
+
+    if (!confirm) return;
+
     toggleLoading(true);
+
     try {
-        const response = await fetch(SCRIPT_URL + "?action=delete&id=" + id);
-        let localDB = JSON.parse(sessionStorage.getItem('sch_db') || '[]');
-        localDB = localDB.filter(item => item.id !== id);
-        sessionStorage.setItem('sch_db', JSON.stringify(localDB));
-        loadRecentTable();
-        refreshDashboard();
-        showToast("✅ දත්ත සාර්ථකව මකා දැමුවා!");
-    } catch(e) {
-        console.error("Server delete failed", e);
-        showToast("❌ සර්වර් එක සමඟ සම්බන්ධ වීමට නොහැකි විය");
+        const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: 'completeProject',
+                projectName: projectName,
+                completed: true
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.status === 'success') {
+            // Local storage update
+            let projects = JSON.parse(sessionStorage.getItem('sch_projs') || '[]');
+            projects = projects.map(p => {
+                if (p.projectName === projectName) {
+                    return { ...p, completed: true };
+                }
+                return p;
+            });
+            sessionStorage.setItem('sch_projs', JSON.stringify(projects));
+
+            showToast(`✅ "${projectName}" ව්‍යාපෘතිය අවසන් කරන ලදී!`);
+            renderProjectList();
+            updateProjectSelects();
+        } else {
+            throw new Error(result.message || 'Server error');
+        }
+    } catch (error) {
+        console.error("Complete project error:", error);
+        showToast("❌ ව්‍යාපෘතිය අවසන් කිරීමේ දෝෂයක්!");
     } finally {
         toggleLoading(false);
     }
+}
+
+async function deleteProject(projectName) {
+    if (userRole !== 'ADMIN') {
+        showToast("❌ ව්‍යාපෘති ඉවත් කිරීමට අවසර ඇත්තේ පරිපාලකට පමණි!");
+        return;
+    }
+
+    const confirm = await showConfirmDialog(
+        "🗑️ ව්‍යාපෘතිය ස්ථිරවම ඉවත් කරන්න",
+        `"${projectName}" ව්‍යාපෘතිය සම්පූර්ණයෙන්ම මකා දමන්නද?\n\n⚠️ මෙය ආපසු හැරවිය නොහැක!`,
+        "ඔව්, ඉවත් කරන්න",
+        "අවලංගු කරන්න"
+    );
+
+    if (!confirm) return;
+
+    toggleLoading(true);
+
+    try {
+        const response = await fetch(SCRIPT_URL + "?action=deleteProject&name=" + encodeURIComponent(projectName));
+        const result = await response.json();
+
+        if (result.status === 'success') {
+            // Local storage update
+            let projects = JSON.parse(sessionStorage.getItem('sch_projs') || '[]');
+            projects = projects.filter(p => p.projectName !== projectName);
+            sessionStorage.setItem('sch_projs', JSON.stringify(projects));
+
+            showToast(`✅ "${projectName}" ව්‍යාපෘතිය ඉවත් කරන ලදී!`);
+            renderProjectList();
+            updateProjectSelects();
+        } else {
+            throw new Error(result.message || 'Server error');
+        }
+    } catch (error) {
+        console.error("Delete project error:", error);
+        showToast("❌ ව්‍යාපෘතිය ඉවත් කිරීමේ දෝෂයක්!");
+    } finally {
+        toggleLoading(false);
+    }
+}
+
+function renderProjectList() {
+    const allProjects = getProjects(true);
+    const activeProjects = allProjects.filter(p => !p.completed);
+    const completedProjects = allProjects.filter(p => p.completed === true);
+    const db = getData();
+
+    let html = `
+        <h4 style="color: var(--success); border-bottom: 2px solid var(--success); padding-bottom: 5px;">
+            <i class="fas fa-play-circle"></i> ක්‍රියාත්මක ව්‍යාපෘති
+        </h4>
+        <table class="project-table" style="width:100%; border-collapse:collapse; margin-bottom:30px;">
+            <thead>
+                <tr style="background: var(--primary); color: white;">
+                    <th>ව්‍යාපෘතිය</th>
+                    <th>ඇස්තමේන්තුව (රු.)</th>
+                    <th>ආදායම (රු.)</th>
+                    <th>වියදම (රු.)</th>
+                    <th>ශේෂය (රු.)</th>
+                    <th style="text-align:center;">ක්‍රියා</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    if (activeProjects.length === 0) {
+        html += `<tr><td colspan="6" style="text-align:center; padding:20px; color:#666;">ක්‍රියාත්මක ව්‍යාපෘති කිසිවක් නැත</td></tr>`;
+    } else {
+        activeProjects.forEach(p => {
+            const pin = db.filter(r => r.proj === p.projectName && r.type === 'IN').reduce((a, b) => a + b.amt, 0);
+            const pex = db.filter(r => r.proj === p.projectName && r.type === 'EX').reduce((a, b) => a + b.amt, 0);
+            const balance = (p.est + pin) - pex;
+
+            html += `<tr style="border-bottom:1px solid #eee;">
+                <td style="padding:10px; font-weight:bold;">${p.projectName}</td>
+                <td style="padding:10px; text-align:right;">${p.est.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                <td style="padding:10px; text-align:right; color:green;">${pin.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                <td style="padding:10px; text-align:right; color:red;">${pex.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                <td style="padding:10px; text-align:right; font-weight:bold; color:${balance >= 0 ? '#1b5e20' : '#c0392b'};">${balance.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                <td style="padding:10px; text-align:center;">
+                    ${userRole === 'ADMIN' ? `
+                        <button onclick="completeProject('${p.projectName}')" class="table-btn" style="background: #f39c12; color:white; margin-right:5px;">
+                            <i class="fas fa-check-circle"></i> අවසන් කරන්න
+                        </button>
+                        <button onclick="deleteProject('${p.projectName}')" class="table-btn" style="background: var(--danger); color:white;">
+                            <i class="fas fa-trash"></i> ඉවත් කරන්න
+                        </button>
+                    ` : userRole === 'STAFF' ? `
+                        <span style="color:#999; font-size:11px;">-</span>
+                    ` : ''}
+                </td>
+            </tr>`;
+        });
+    }
+
+    html += `</tbody></table>`;
+
+    if (completedProjects.length > 0) {
+        html += `
+            <h4 style="color: #6c757d; border-bottom: 2px solid #6c757d; padding-bottom: 5px; margin-top: 20px;">
+                <i class="fas fa-check-double"></i> අවසන් කළ ව්‍යාපෘති
+            </h4>
+            <table class="project-table" style="width:100%; border-collapse:collapse;">
+                <thead>
+                    <tr style="background: #6c757d; color: white;">
+                        <th>ව්‍යාපෘතිය</th>
+                        <th>ඇස්තමේන්තුව (රු.)</th>
+                        <th>ආදායම (රු.)</th>
+                        <th>වියදම (රු.)</th>
+                        <th>අවසන් ශේෂය (රු.)</th>
+                        ${userRole === 'ADMIN' ? '<th style="text-align:center;">ඉවත් කරන්න</th>' : ''}
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        completedProjects.forEach(p => {
+            const pin = db.filter(r => r.proj === p.projectName && r.type === 'IN').reduce((a, b) => a + b.amt, 0);
+            const pex = db.filter(r => r.proj === p.projectName && r.type === 'EX').reduce((a, b) => a + b.amt, 0);
+            const balance = (p.est + pin) - pex;
+
+            html += `<tr style="background:#f8f9fa; color:#666;">
+                <td style="padding:10px;">${p.projectName}</td>
+                <td style="padding:10px; text-align:right;">${p.est.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                <td style="padding:10px; text-align:right;">${pin.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                <td style="padding:10px; text-align:right;">${pex.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                <td style="padding:10px; text-align:right; font-weight:bold;">${balance.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                ${userRole === 'ADMIN' ? `
+                    <td style="padding:10px; text-align:center;">
+                        <button onclick="deleteProject('${p.projectName}')" class="table-btn" style="background: var(--danger); color:white;">
+                            <i class="fas fa-trash"></i> ඉවත් කරන්න
+                        </button>
+                    </td>
+                ` : ''}
+            </tr>`;
+        });
+
+        html += `</tbody></table>`;
+    }
+
+    document.getElementById('project-list-table').innerHTML = html;
+}
+
+function updateProjectSelects() {
+    const activeProjects = getProjects(false);
+    ['inProjSelect', 'exProjSelect', 'searchProject'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.innerHTML = '<option value="">නොමැත / සියල්ල</option>';
+            activeProjects.forEach(p => {
+                el.innerHTML += `<option value="${p.projectName}">${p.projectName}</option>`;
+            });
+        }
+    });
+}
+
+function renderProjectList() {
+    const allProjects = getProjects(true);
+    const activeProjects = allProjects.filter(p => !p.completed);
+    const completedProjects = allProjects.filter(p => p.completed === true);
+    const db = getData();
+
+    let html = `
+        <h4 style="color: var(--success); border-bottom: 2px solid var(--success); padding-bottom: 5px;">
+            <i class="fas fa-play-circle"></i> ක්‍රියාත්මක ව්‍යාපෘති
+        </h4>
+        <table class="project-table" style="width:100%; border-collapse:collapse; margin-bottom:30px;">
+            <thead>
+                <tr style="background: var(--primary); color: white;">
+                    <th>ව්‍යාපෘතිය</th>
+                    <th>ඇස්තමේන්තුව (රු.)</th>
+                    <th>ආදායම (රු.)</th>
+                    <th>වියදම (රු.)</th>
+                    <th>ශේෂය (රු.)</th>
+                    <th style="text-align:center;">ක්‍රියා</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    if (activeProjects.length === 0) {
+        html += `<tr><td colspan="6" style="text-align:center; padding:20px; color:#666;">ක්‍රියාත්මක ව්‍යාපෘති කිසිවක් නැත</td></tr>`;
+    } else {
+        activeProjects.forEach(p => {
+            const pin = db.filter(r => r.proj === p.projectName && r.type === 'IN').reduce((a, b) => a + b.amt, 0);
+            const pex = db.filter(r => r.proj === p.projectName && r.type === 'EX').reduce((a, b) => a + b.amt, 0);
+            const balance = (p.est + pin) - pex;
+
+            html += `<tr style="border-bottom:1px solid #eee;">
+                <td style="padding:10px; font-weight:bold;">${p.projectName}</td>
+                <td style="padding:10px; text-align:right;">${p.est.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                <td style="padding:10px; text-align:right; color:green;">${pin.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                <td style="padding:10px; text-align:right; color:red;">${pex.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                <td style="padding:10px; text-align:right; font-weight:bold; color:${balance >= 0 ? '#1b5e20' : '#c0392b'};">${balance.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                <td style="padding:10px; text-align:center;">
+                    ${userRole === 'ADMIN' ? `
+                        <button onclick="completeProject('${p.projectName}')" class="table-btn" style="background: #f39c12; color:white; margin-right:5px;">
+                            <i class="fas fa-check-circle"></i> අවසන් කරන්න
+                        </button>
+                        <button onclick="deleteProject('${p.projectName}')" class="table-btn" style="background: var(--danger); color:white;">
+                            <i class="fas fa-trash"></i> ඉවත් කරන්න
+                        </button>
+                    ` : userRole === 'STAFF' ? `
+                        <span style="color:#999; font-size:11px;">-</span>
+                    ` : ''}
+                </td>
+            </tr>`;
+        });
+    }
+
+    html += `</tbody></table>`;
+
+    if (completedProjects.length > 0) {
+        html += `
+            <h4 style="color: #6c757d; border-bottom: 2px solid #6c757d; padding-bottom: 5px; margin-top: 20px;">
+                <i class="fas fa-check-double"></i> අවසන් කළ ව්‍යාපෘති
+            </h4>
+            <table class="project-table" style="width:100%; border-collapse:collapse;">
+                <thead>
+                    <tr style="background: #6c757d; color: white;">
+                        <th>ව්‍යාපෘතිය</th>
+                        <th>ඇස්තමේන්තුව (රු.)</th>
+                        <th>ආදායම (රු.)</th>
+                        <th>වියදම (රු.)</th>
+                        <th>අවසන් ශේෂය (රු.)</th>
+                        ${userRole === 'ADMIN' ? '<th style="text-align:center;">ඉවත් කරන්න</th>' : ''}
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        completedProjects.forEach(p => {
+            const pin = db.filter(r => r.proj === p.projectName && r.type === 'IN').reduce((a, b) => a + b.amt, 0);
+            const pex = db.filter(r => r.proj === p.projectName && r.type === 'EX').reduce((a, b) => a + b.amt, 0);
+            const balance = (p.est + pin) - pex;
+
+            html += `<tr style="background:#f8f9fa; color:#666;">
+                <td style="padding:10px;">${p.projectName}</td>
+                <td style="padding:10px; text-align:right;">${p.est.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                <td style="padding:10px; text-align:right;">${pin.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                <td style="padding:10px; text-align:right;">${pex.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                <td style="padding:10px; text-align:right; font-weight:bold;">${balance.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                ${userRole === 'ADMIN' ? `
+                    <td style="padding:10px; text-align:center;">
+                        <button onclick="deleteProject('${p.projectName}')" class="table-btn" style="background: var(--danger); color:white;">
+                            <i class="fas fa-trash"></i> ඉවත් කරන්න
+                        </button>
+                    </td>
+                ` : ''}
+            </tr>`;
+        });
+
+        html += `</tbody></table>`;
+    }
+
+    document.getElementById('project-list-table').innerHTML = html;
+}
+
+function updateProjectSelects() {
+    const activeProjects = getProjects(false);
+    ['inProjSelect', 'exProjSelect', 'searchProject'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.innerHTML = '<option value="">නොමැත / සියල්ල</option>';
+            activeProjects.forEach(p => {
+                el.innerHTML += `<option value="${p.projectName}">${p.projectName}</option>`;
+            });
+        }
+    });
 }
 
 function showSec(id) {
